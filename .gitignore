@@ -1,0 +1,50 @@
+############################
+# STM32CubeIDE - gitignore template ;) 
+############################
+
+# Build folders
+Debug/
+Release/
+build/
+
+# Eclipse / CubeIDE settings
+.settings/
+.project
+.cproject
+
+# CubeMX generated
+*.launch
+
+# Object files
+*.o
+*.obj
+*.d
+
+# Libraries
+*.a
+
+# Executables
+*.elf
+*.map
+*.hex
+*.bin
+
+# Temporary files
+*.log
+*.tmp
+
+# Backup files
+*~
+
+############################
+# OS files
+############################
+
+.DS_Store
+Thumbs.db
+
+############################
+# VSCode (if used)
+############################
+
+.vscode/
