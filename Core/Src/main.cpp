@@ -119,11 +119,10 @@ int main(void)
   while (1)
   {
 
-	  while(1)
-	  {
-		  /* Motion system checker */
-		  robot.update();
-	  }
+
+	  /* Motion system checker */
+	  robot.update();
+
 
     /* USER CODE END WHILE */
 

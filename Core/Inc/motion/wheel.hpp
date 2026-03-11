@@ -3,6 +3,13 @@
 #include "motor.hpp"
 #include "main.h"
 
+/* Directions */
+enum class Direction
+{
+    Forward,
+    Backward
+};
+
 class Wheel
 {
 private:
@@ -25,7 +32,7 @@ public:
 
     Wheel(Motor& motor_ref);
 
-    void setSpeed(int speed);
+    void setSpeed(Direction dir, int speed);
 
     void update();
 

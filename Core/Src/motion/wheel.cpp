@@ -7,22 +7,16 @@ Wheel::Wheel(Motor& motor_ref)
 
 int Wheel::clamp(int speed)
 {
-    if(speed > 0)
-    {
-        if(speed < MIN_PWM) return MIN_PWM;
-        if(speed > MAX_PWM) return MAX_PWM;
-    }
+    if(speed < MIN_PWM)
+        speed = MIN_PWM;
 
-    if(speed < 0)
-    {
-        if(speed > -MIN_PWM) return -MIN_PWM;
-        if(speed < -MAX_PWM) return -MAX_PWM;
-    }
+    if(speed > MAX_PWM)
+        speed = MAX_PWM;
 
     return speed;
 }
 
-void Wheel::setSpeed(int speed)
+void Wheel::setSpeed(Direction dir, int speed)
 {
     if(speed == 0)
     {
@@ -30,13 +24,16 @@ void Wheel::setSpeed(int speed)
         return;
     }
 
-    int new_speed = clamp(speed);
+    speed = clamp(speed);
 
-    target_speed = new_speed;
-    current_speed = new_speed;
+    if(dir == Direction::Backward)
+        speed = -speed;
+
+    target_speed = speed;
+    current_speed = speed;
 
     // kickstart
-    motor.setSpeed((new_speed > 0) ? MAX_PWM : -MAX_PWM);
+    motor.setSpeed((speed > 0) ? MAX_PWM : -MAX_PWM);
 
     starting = true;
     kickstart_time = HAL_GetTick();
@@ -60,6 +57,5 @@ void Wheel::stop()
 
     current_speed = 0;
     target_speed = 0;
-
     starting = false;
 }

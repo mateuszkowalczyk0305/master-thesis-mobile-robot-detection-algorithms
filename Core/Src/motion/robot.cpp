@@ -13,34 +13,34 @@ Robot::Robot(Wheel& wheel1,
 
 void Robot::forward(int speed)
 {
-    w1.setSpeed(speed);
-    w2.setSpeed(speed);
-    w3.setSpeed(speed);
-    w4.setSpeed(speed);
+    w1.setSpeed(Direction::Forward, speed);
+    w2.setSpeed(Direction::Forward, speed);
+    w3.setSpeed(Direction::Forward, speed);
+    w4.setSpeed(Direction::Forward, speed);
 }
 
 void Robot::backward(int speed)
 {
-    w1.setSpeed(-speed);
-    w2.setSpeed(-speed);
-    w3.setSpeed(-speed);
-    w4.setSpeed(-speed);
+    w1.setSpeed(Direction::Backward, speed);
+    w2.setSpeed(Direction::Backward, speed);
+    w3.setSpeed(Direction::Backward, speed);
+    w4.setSpeed(Direction::Backward, speed);
 }
 
 void Robot::turnLeft(int speed)
 {
-    w1.setSpeed(-speed);
-    w2.setSpeed(speed);
-    w3.setSpeed(-speed);
-    w4.setSpeed(speed);
+    w1.setSpeed(Direction::Backward, speed);
+    w2.setSpeed(Direction::Forward, speed);
+    w3.setSpeed(Direction::Backward, speed);
+    w4.setSpeed(Direction::Forward, speed);
 }
 
 void Robot::turnRight(int speed)
 {
-    w1.setSpeed(speed);
-    w2.setSpeed(-speed);
-    w3.setSpeed(speed);
-    w4.setSpeed(-speed);
+    w1.setSpeed(Direction::Forward, speed);
+    w2.setSpeed(Direction::Backward, speed);
+    w3.setSpeed(Direction::Forward, speed);
+    w4.setSpeed(Direction::Backward, speed);
 }
 
 void Robot::stop()
