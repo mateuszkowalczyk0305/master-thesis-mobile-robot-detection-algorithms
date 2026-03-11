@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <motion/wheel.hpp>
+#include <motion/robot.hpp>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -92,16 +92,25 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Motion init */
+  /******************************************************/
+  /* Motion System initialization */
+
+  /* Motors */
   Motor m1(&htim4, TIM_CHANNEL_3, &htim4, TIM_CHANNEL_4);
   Motor m2(&htim4, TIM_CHANNEL_2, &htim4, TIM_CHANNEL_1);
   Motor m3(&htim1, TIM_CHANNEL_3, &htim1, TIM_CHANNEL_4);
   Motor m4(&htim1, TIM_CHANNEL_1, &htim1, TIM_CHANNEL_2);
 
+  /* Wheels */
   Wheel w1(m1);
   Wheel w2(m2);
   Wheel w3(m3);
   Wheel w4(m4);
+
+  /* Robot */
+  Robot robot(w1, w2, w3, w4);
+
+  /******************************************************/
 
   /* USER CODE END 2 */
 
@@ -112,10 +121,8 @@ int main(void)
 
 	  while(1)
 	  {
-	      w1.update();
-	      w2.update();
-	      w3.update();
-	      w4.update();
+		  /* Motion system checker */
+		  robot.update();
 	  }
 
     /* USER CODE END WHILE */

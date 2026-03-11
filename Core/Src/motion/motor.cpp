@@ -1,9 +1,3 @@
-/*
- * motor.cpp
- *
- *  Created on: Mar 9, 2026
- *      Author: m_kowalczyk
- */
 
 #include <motion/motor.hpp>
 

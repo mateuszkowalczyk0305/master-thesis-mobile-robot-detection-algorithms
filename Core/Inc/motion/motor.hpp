@@ -1,9 +1,3 @@
-/*
- * motor.hpp
- *
- *  Created on: Mar 9, 2026
- *      Author: m_kowalczyk
- */
 
 #pragma once
 
