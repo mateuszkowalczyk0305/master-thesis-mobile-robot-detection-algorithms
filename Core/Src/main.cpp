@@ -17,13 +17,14 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+//#include <motion/wheel.hpp>
 #include "main.h"
 #include "tim.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "motor.hpp"
+#include <motion/wheel.hpp>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,6 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int speed = 0;
 /* USER CODE END 0 */
 
 /**
@@ -72,7 +72,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+   HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -92,12 +92,16 @@ int main(void)
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
 
-  /* Motors Init */
-  Motor motor1(&htim4, TIM_CHANNEL_3, &htim4, TIM_CHANNEL_4); // PB8 PB9
-  Motor motor2(&htim4, TIM_CHANNEL_2, &htim4, TIM_CHANNEL_1); // PB7 PB6
+  /* Motion init */
+  Motor m1(&htim4, TIM_CHANNEL_3, &htim4, TIM_CHANNEL_4);
+  Motor m2(&htim4, TIM_CHANNEL_2, &htim4, TIM_CHANNEL_1);
+  Motor m3(&htim1, TIM_CHANNEL_3, &htim1, TIM_CHANNEL_4);
+  Motor m4(&htim1, TIM_CHANNEL_1, &htim1, TIM_CHANNEL_2);
 
-  Motor motor3(&htim1, TIM_CHANNEL_3, &htim1, TIM_CHANNEL_4); // PA10 PA11
-  Motor motor4(&htim1, TIM_CHANNEL_1, &htim1, TIM_CHANNEL_2); // PA8 PA9
+  Wheel w1(m1);
+  Wheel w2(m2);
+  Wheel w3(m3);
+  Wheel w4(m4);
 
   /* USER CODE END 2 */
 
@@ -106,10 +110,13 @@ int main(void)
   while (1)
   {
 
-	  motor1.setSpeed(speed);
-	  motor2.setSpeed(speed);
-	  motor3.setSpeed(speed);
-	  motor4.setSpeed(speed);
+	  while(1)
+	  {
+	      w1.update();
+	      w2.update();
+	      w3.update();
+	      w4.update();
+	  }
 
     /* USER CODE END WHILE */
 

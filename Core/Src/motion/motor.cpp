@@ -5,7 +5,7 @@
  *      Author: m_kowalczyk
  */
 
-#include "motor.hpp"
+#include <motion/motor.hpp>
 
 Motor::Motor(TIM_HandleTypeDef* timerA,
              uint32_t pwm_channelA,
