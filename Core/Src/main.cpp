@@ -55,7 +55,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+int speed = 0;
 /* USER CODE END 0 */
 
 /**
@@ -99,8 +99,6 @@ int main(void)
   Motor motor3(&htim1, TIM_CHANNEL_3, &htim1, TIM_CHANNEL_4); // PA10 PA11
   Motor motor4(&htim1, TIM_CHANNEL_1, &htim1, TIM_CHANNEL_2); // PA8 PA9
 
-
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,10 +106,10 @@ int main(void)
   while (1)
   {
 
-	  motor1.setSpeed(1500);
-	  motor2.setSpeed(1500);
-	  motor3.setSpeed(1500);
-	  motor4.setSpeed(1500);
+	  motor1.setSpeed(speed);
+	  motor2.setSpeed(speed);
+	  motor3.setSpeed(speed);
+	  motor4.setSpeed(speed);
 
     /* USER CODE END WHILE */
 
