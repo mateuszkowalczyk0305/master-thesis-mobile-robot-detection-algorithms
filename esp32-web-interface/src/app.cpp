@@ -7,6 +7,16 @@
 #define LED_PIN 8
 #endif
 
+// UART used to send mode frames when "Go!" happens.
+// You can change these pins if your board wiring is different.
+#ifndef UART_RX_PIN
+#define UART_RX_PIN 20
+#endif
+
+#ifndef UART_TX_PIN
+#define UART_TX_PIN 21
+#endif
+
 // Defined in src/main.cpp (so you only edit credentials there)
 extern const char *WIFI_SSID;
 extern const char *WIFI_PASS;
@@ -78,6 +88,12 @@ static void setupWifi() {
 void setup() {
   Serial.begin(115200);
   delay(200);
+
+  Serial1.begin(115200, SERIAL_8N1, UART_RX_PIN, UART_TX_PIN);
+  Serial.print("UART: Serial1 115200, RX=");
+  Serial.print(UART_RX_PIN);
+  Serial.print(" TX=");
+  Serial.println(UART_TX_PIN);
 
   setupWifi();
   web::begin(LED_PIN);
