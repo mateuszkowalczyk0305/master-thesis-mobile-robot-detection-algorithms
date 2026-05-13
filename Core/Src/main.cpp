@@ -17,14 +17,18 @@
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
-//#include <motion/wheel.hpp>
 #include "main.h"
+#include "adc.h"
+#include "dma.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <motion/robot.hpp>
+#include "IrSensors.h"
+#include "DebugData.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,7 +76,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-   HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -85,11 +89,13 @@ int main(void)
 
   /* USER CODE END SysInit */
 
-
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM1_Init();
   MX_TIM4_Init();
+  MX_ADC1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /******************************************************/
@@ -112,6 +118,10 @@ int main(void)
 
   /******************************************************/
 
+  /* IR detection */
+  IrSensors irSensors(&hadc1);
+  irSensors.startDma();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,9 +129,83 @@ int main(void)
   while (1)
   {
 
+//	  irSensors.update();
+//
+//	  IrSensors::Sector sector = irSensors.getSector();
+//
+//	  IrSensors::SensorData leftData =
+//		  irSensors.getSensorData(IrSensors::Sensor::Left);
+//
+//	  IrSensors::SensorData centerData =
+//		  irSensors.getSensorData(IrSensors::Sensor::Center);
+//
+//	  IrSensors::SensorData rightData =
+//		  irSensors.getSensorData(IrSensors::Sensor::Right);
+//
+//	  if (sector == IrSensors::Sector::Center)
+//	  {
+//		  // Przeciwnik na środku.
+//		  // TODO: jedź prosto.
+//	  }
+//	  else if (sector == IrSensors::Sector::Left)
+//	  {
+//		  // Przeciwnik po lewej.
+//		  // TODO: skręć w lewo.
+//	  }
+//	  else if (sector == IrSensors::Sector::Right)
+//	  {
+//		  // Przeciwnik po prawej.
+//		  // TODO: skręć w prawo.
+//	  }
+//	  else if (sector == IrSensors::Sector::FrontWide)
+//	  {
+//		  // Przeciwnik wykryty szeroko z przodu.
+//		  // TODO: atak prosto.
+//	  }
+//	  else
+//	  {
+//		  // Brak przeciwnika.
+//		  // TODO: szukanie przeciwnika.
+//	  }
+//
+//	  HAL_Delay(40);
 
-	  /* Motion system checker */
-	  robot.update();
+	    irSensors.update();
+
+	    IrSensors::SensorData leftData =
+	        irSensors.getSensorData(IrSensors::Sensor::Left);
+
+	    IrSensors::SensorData centerData =
+	        irSensors.getSensorData(IrSensors::Sensor::Center);
+
+	    IrSensors::SensorData rightData =
+	        irSensors.getSensorData(IrSensors::Sensor::Right);
+
+	    IrSensors::Sector sector = irSensors.getSector();
+
+	    irDebug.leftRaw = leftData.adcRaw;
+	    irDebug.centerRaw = centerData.adcRaw;
+	    irDebug.rightRaw = rightData.adcRaw;
+
+	    irDebug.leftVoltage = leftData.voltage;
+	    irDebug.centerVoltage = centerData.voltage;
+	    irDebug.rightVoltage = rightData.voltage;
+
+	    irDebug.leftDistance = leftData.distanceCm;
+	    irDebug.centerDistance = centerData.distanceCm;
+	    irDebug.rightDistance = rightData.distanceCm;
+
+	    irDebug.leftFiltered = leftData.filteredCm;
+	    irDebug.centerFiltered = centerData.filteredCm;
+	    irDebug.rightFiltered = rightData.filteredCm;
+
+	    irDebug.leftDetected = leftData.detected ? 1 : 0;
+	    irDebug.centerDetected = centerData.detected ? 1 : 0;
+	    irDebug.rightDetected = rightData.detected ? 1 : 0;
+
+	    irDebug.sector = static_cast<uint8_t>(sector);
+
+	    HAL_Delay(40);
 
 
     /* USER CODE END WHILE */
