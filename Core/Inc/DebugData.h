@@ -5,29 +5,45 @@
 
 struct IrDebugData
 {
-    volatile uint16_t leftRaw;
-    volatile uint16_t centerRaw;
-    volatile uint16_t rightRaw;
+    uint16_t leftRaw;
+    uint16_t centerRaw;
+    uint16_t rightRaw;
 
-    volatile float leftVoltage;
-    volatile float centerVoltage;
-    volatile float rightVoltage;
+    float leftVoltage;
+    float centerVoltage;
+    float rightVoltage;
 
-    volatile float leftDistance;
-    volatile float centerDistance;
-    volatile float rightDistance;
+    float leftDistance;
+    float centerDistance;
+    float rightDistance;
 
-    volatile float leftFiltered;
-    volatile float centerFiltered;
-    volatile float rightFiltered;
+    float leftFiltered;
+    float centerFiltered;
+    float rightFiltered;
 
-    volatile uint8_t leftDetected;
-    volatile uint8_t centerDetected;
-    volatile uint8_t rightDetected;
+    uint8_t leftDetected;
+    uint8_t centerDetected;
+    uint8_t rightDetected;
 
-    volatile uint8_t sector;
+    uint8_t sector;
+};
+
+struct UltrasonicDebugData
+{
+    float leftDistance;
+    float rightDistance;
+
+    uint8_t leftOk;
+    uint8_t rightOk;
+
+    uint32_t leftCounter;
+    uint32_t rightCounter;
+
+    uint32_t leftErrorCounter;
+    uint32_t rightErrorCounter;
 };
 
 extern IrDebugData irDebug;
+extern UltrasonicDebugData ultrasonicDebug;
 
 #endif /* INC_DEBUGDATA_HPP_ */

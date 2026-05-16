@@ -26,8 +26,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 #include <motion/robot.hpp>
+
 #include "IrSensors.h"
+#include "UltrasonicSensor.h"
+
 #include "DebugData.h"
 /* USER CODE END Includes */
 
@@ -96,6 +100,7 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
   /******************************************************/
@@ -122,13 +127,32 @@ int main(void)
   IrSensors irSensors(&hadc1);
   irSensors.startDma();
 
+  /* Ultrasonic detection */
+  UltrasonicSensor leftUltrasonic(
+      &htim2,
+      GPIOB, GPIO_PIN_10,   // TRIG LEFT
+      GPIOB, GPIO_PIN_1     // ECHO LEFT
+  );
+
+  UltrasonicSensor rightUltrasonic(
+      &htim2,
+      GPIOB, GPIO_PIN_0,    // TRIG RIGHT
+      GPIOB, GPIO_PIN_2     // ECHO RIGHT
+  );
+
+  leftUltrasonic.init();
+  rightUltrasonic.init();
+
+  leftUltrasonic.registerForExti();
+  rightUltrasonic.registerForExti();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+/************************************** IR SENSORS **********************************/
 //	  irSensors.update();
 //
 //	  IrSensors::Sector sector = irSensors.getSector();
@@ -169,44 +193,77 @@ int main(void)
 //	  }
 //
 //	  HAL_Delay(40);
+///////////////////////////////////////////////////////////
+//	    irSensors.update();
+//
+//	    IrSensors::SensorData leftData =
+//	        irSensors.getSensorData(IrSensors::Sensor::Left);
+//
+//	    IrSensors::SensorData centerData =
+//	        irSensors.getSensorData(IrSensors::Sensor::Center);
+//
+//	    IrSensors::SensorData rightData =
+//	        irSensors.getSensorData(IrSensors::Sensor::Right);
+//
+//	    IrSensors::Sector sector = irSensors.getSector();
+//
+//	    irDebug.leftRaw = leftData.adcRaw;
+//	    irDebug.centerRaw = centerData.adcRaw;
+//	    irDebug.rightRaw = rightData.adcRaw;
+//
+//	    irDebug.leftVoltage = leftData.voltage;
+//	    irDebug.centerVoltage = centerData.voltage;
+//	    irDebug.rightVoltage = rightData.voltage;
+//
+//	    irDebug.leftDistance = leftData.distanceCm;
+//	    irDebug.centerDistance = centerData.distanceCm;
+//	    irDebug.rightDistance = rightData.distanceCm;
+//
+//	    irDebug.leftFiltered = leftData.filteredCm;
+//	    irDebug.centerFiltered = centerData.filteredCm;
+//	    irDebug.rightFiltered = rightData.filteredCm;
+//
+//	    irDebug.leftDetected = leftData.detected ? 1 : 0;
+//	    irDebug.centerDetected = centerData.detected ? 1 : 0;
+//	    irDebug.rightDetected = rightData.detected ? 1 : 0;
+//
+//	    irDebug.sector = static_cast<uint8_t>(sector);
+//
+//	    HAL_Delay(40);
+/////////////////////////////////////////////************************** IR SENSORS *********************//
 
-	    irSensors.update();
+	  float leftDistance = 0.0f;
+	  float rightDistance = 0.0f;
 
-	    IrSensors::SensorData leftData =
-	        irSensors.getSensorData(IrSensors::Sensor::Left);
+	  bool leftOk = leftUltrasonic.measure(leftDistance);
+	  HAL_Delay(25); // przerwa, żeby echo z lewego czujnika wygasło
 
-	    IrSensors::SensorData centerData =
-	        irSensors.getSensorData(IrSensors::Sensor::Center);
+	  bool rightOk = rightUltrasonic.measure(rightDistance);
 
-	    IrSensors::SensorData rightData =
-	        irSensors.getSensorData(IrSensors::Sensor::Right);
+	  ultrasonicDebug.leftOk = leftOk ? 1 : 0;
+	  ultrasonicDebug.rightOk = rightOk ? 1 : 0;
 
-	    IrSensors::Sector sector = irSensors.getSector();
+	  if (leftOk)
+	  {
+	      ultrasonicDebug.leftDistance = leftDistance;
+	      ultrasonicDebug.leftCounter++;
+	  }
+	  else
+	  {
+	      ultrasonicDebug.leftErrorCounter++;
+	  }
 
-	    irDebug.leftRaw = leftData.adcRaw;
-	    irDebug.centerRaw = centerData.adcRaw;
-	    irDebug.rightRaw = rightData.adcRaw;
+	  if (rightOk)
+	  {
+	      ultrasonicDebug.rightDistance = rightDistance;
+	      ultrasonicDebug.rightCounter++;
+	  }
+	  else
+	  {
+	      ultrasonicDebug.rightErrorCounter++;
+	  }
 
-	    irDebug.leftVoltage = leftData.voltage;
-	    irDebug.centerVoltage = centerData.voltage;
-	    irDebug.rightVoltage = rightData.voltage;
-
-	    irDebug.leftDistance = leftData.distanceCm;
-	    irDebug.centerDistance = centerData.distanceCm;
-	    irDebug.rightDistance = rightData.distanceCm;
-
-	    irDebug.leftFiltered = leftData.filteredCm;
-	    irDebug.centerFiltered = centerData.filteredCm;
-	    irDebug.rightFiltered = rightData.filteredCm;
-
-	    irDebug.leftDetected = leftData.detected ? 1 : 0;
-	    irDebug.centerDetected = centerData.detected ? 1 : 0;
-	    irDebug.rightDetected = rightData.detected ? 1 : 0;
-
-	    irDebug.sector = static_cast<uint8_t>(sector);
-
-	    HAL_Delay(40);
-
+	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
