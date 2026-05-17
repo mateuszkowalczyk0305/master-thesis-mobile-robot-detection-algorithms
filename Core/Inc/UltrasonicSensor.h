@@ -40,12 +40,10 @@ private:
     volatile uint32_t m_startUs = 0;
     volatile uint32_t m_endUs = 0;
 
-private:
     uint32_t micros() const;
     void delayUs(uint32_t us);
     void sendTrigger();
 
-private:
     static constexpr uint8_t MAX_REGISTERED_SENSORS = 4;
     static UltrasonicSensor* s_sensors[MAX_REGISTERED_SENSORS];
 };

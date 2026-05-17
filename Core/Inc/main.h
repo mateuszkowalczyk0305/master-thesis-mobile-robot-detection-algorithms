@@ -81,8 +81,8 @@ void Error_Handler(void);
 #define USART_ESP32_TX_GPIO_Port GPIOA
 #define USART_EXP32_RX_Pin GPIO_PIN_3
 #define USART_EXP32_RX_GPIO_Port GPIOB
-#define LiDAR_TIM2_PWM_Pin GPIO_PIN_5
-#define LiDAR_TIM2_PWM_GPIO_Port GPIOB
+#define LiDAR_MOTOR_PWM_Pin GPIO_PIN_5
+#define LiDAR_MOTOR_PWM_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

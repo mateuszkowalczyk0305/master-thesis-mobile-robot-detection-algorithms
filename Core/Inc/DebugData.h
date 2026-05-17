@@ -43,7 +43,52 @@ struct UltrasonicDebugData
     uint32_t rightErrorCounter;
 };
 
+struct RPLidarDebugData
+{
+    float angleDeg;
+    float distanceMm;
+
+    uint8_t quality;
+    uint8_t startFlag;
+    uint8_t valid;
+
+    uint8_t inDetectionZone;
+
+    float filteredAngleDeg;
+    float filteredDistanceMm;
+    uint8_t filteredQuality;
+
+    uint32_t receivedBytes;
+    uint32_t validPoints;
+    uint32_t invalidNodes;
+    uint32_t filteredPoints;
+
+    uint32_t clustersCreated;
+    uint32_t detectedObjects;
+
+    uint8_t currentClusterValid;
+    uint16_t currentClusterPoints;
+    float currentClusterStartAngle;
+    float currentClusterEndAngle;
+    float currentClusterCenterAngle;
+    float currentClusterDistance;
+    float currentClusterWidth;
+
+    uint8_t bestClusterValid;
+    uint16_t bestClusterPoints;
+    float bestClusterCenterAngle;
+    float bestClusterDistance;
+    float bestClusterWidth;
+
+    uint8_t objectDetected;
+    float objectAngle;
+    float objectDistance;
+    float objectWidth;
+    uint16_t objectPoints;
+};
+
 extern IrDebugData irDebug;
 extern UltrasonicDebugData ultrasonicDebug;
+extern RPLidarDebugData lidarDebug;
 
 #endif /* INC_DEBUGDATA_HPP_ */

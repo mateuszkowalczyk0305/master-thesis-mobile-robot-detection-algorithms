@@ -31,6 +31,7 @@
 
 #include "IrSensors.h"
 #include "UltrasonicSensor.h"
+#include "RPLidar.h"
 
 #include "DebugData.h"
 /* USER CODE END Includes */
@@ -101,6 +102,8 @@ int main(void)
   MX_ADC1_Init();
   MX_USART1_UART_Init();
   MX_TIM2_Init();
+  MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
   /******************************************************/
@@ -127,7 +130,9 @@ int main(void)
   IrSensors irSensors(&hadc1);
   irSensors.startDma();
 
-  /* Ultrasonic detection */
+  /******************************************************/
+
+  /* Ultrasonic Detection */
   UltrasonicSensor leftUltrasonic(
       &htim2,
       GPIOB, GPIO_PIN_10,   // TRIG LEFT
@@ -145,6 +150,20 @@ int main(void)
 
   leftUltrasonic.registerForExti();
   rightUltrasonic.registerForExti();
+
+  /******************************************************/
+
+  /* LiDAR Detection */
+  RPLidar lidar(&huart2, &htim3, TIM_CHANNEL_2);
+
+  lidar.init();
+
+  RPLidarPoint lidarPoint;
+  RPLidarCluster currentCluster;
+  RPLidarCluster bestCluster;
+  RPLidarDetectedObject detectedObject;
+
+  /******************************************************/
 
   /* USER CODE END 2 */
 
@@ -232,38 +251,105 @@ int main(void)
 //	    HAL_Delay(40);
 /////////////////////////////////////////////************************** IR SENSORS *********************//
 
-	  float leftDistance = 0.0f;
-	  float rightDistance = 0.0f;
 
-	  bool leftOk = leftUltrasonic.measure(leftDistance);
-	  HAL_Delay(25); // przerwa, żeby echo z lewego czujnika wygasło
 
-	  bool rightOk = rightUltrasonic.measure(rightDistance);
 
-	  ultrasonicDebug.leftOk = leftOk ? 1 : 0;
-	  ultrasonicDebug.rightOk = rightOk ? 1 : 0;
 
-	  if (leftOk)
-	  {
-	      ultrasonicDebug.leftDistance = leftDistance;
-	      ultrasonicDebug.leftCounter++;
-	  }
-	  else
-	  {
-	      ultrasonicDebug.leftErrorCounter++;
-	  }
+	  ///////////////////////////////////////////// US METODA ?????///////////////
+//	  float leftDistance = 0.0f;
+//	  float rightDistance = 0.0f;
+//
+//	  bool leftOk = leftUltrasonic.measure(leftDistance);
+//	  HAL_Delay(25); // przerwa, żeby echo z lewego czujnika wygasło
+//
+//	  bool rightOk = rightUltrasonic.measure(rightDistance);
+//
+//	  ultrasonicDebug.leftOk = leftOk ? 1 : 0;
+//	  ultrasonicDebug.rightOk = rightOk ? 1 : 0;
+//
+//	  if (leftOk)
+//	  {
+//	      ultrasonicDebug.leftDistance = leftDistance;
+//	      ultrasonicDebug.leftCounter++;
+//	  }
+//	  else
+//	  {
+//	      ultrasonicDebug.leftErrorCounter++;
+//	  }
+//
+//	  if (rightOk)
+//	  {
+//	      ultrasonicDebug.rightDistance = rightDistance;
+//	      ultrasonicDebug.rightCounter++;
+//	  }
+//	  else
+//	  {
+//	      ultrasonicDebug.rightErrorCounter++;
+//	  }
+//
+//	  HAL_Delay(100);
+///////////////////////////////////////////// US METODA ?????///////////////
 
-	  if (rightOk)
-	  {
-	      ultrasonicDebug.rightDistance = rightDistance;
-	      ultrasonicDebug.rightCounter++;
-	  }
-	  else
-	  {
-	      ultrasonicDebug.rightErrorCounter++;
-	  }
 
-	  HAL_Delay(100);
+	/************************************** LiDAR **********************************/
+
+	    if (lidar.getPoint(lidarPoint))
+	    {
+	        lidarDebug.angleDeg = lidarPoint.angleDeg;
+	        lidarDebug.distanceMm = lidarPoint.distanceMm;
+	        lidarDebug.quality = lidarPoint.quality;
+	        lidarDebug.startFlag = lidarPoint.startFlag ? 1 : 0;
+	        lidarDebug.valid = lidarPoint.valid ? 1 : 0;
+
+	        if (lidar.isPointInDetectionZone(lidarPoint))
+	        {
+	            lidarDebug.inDetectionZone = 1;
+
+	            lidarDebug.filteredAngleDeg = lidarPoint.angleDeg;
+	            lidarDebug.filteredDistanceMm = lidarPoint.distanceMm;
+	            lidarDebug.filteredQuality = lidarPoint.quality;
+	        }
+	        else
+	        {
+	            lidarDebug.inDetectionZone = 0;
+	        }
+
+	        lidar.processPointForDetection(lidarPoint);
+	    }
+
+	    currentCluster = lidar.getCurrentCluster();
+	    bestCluster = lidar.getBestCluster();
+	    lidar.getDetectedObject(detectedObject);
+
+	    lidarDebug.receivedBytes = lidar.receivedBytes;
+	    lidarDebug.validPoints = lidar.validPoints;
+	    lidarDebug.invalidNodes = lidar.invalidNodes;
+	    lidarDebug.filteredPoints = lidar.filteredPoints;
+
+	    lidarDebug.clustersCreated = lidar.clustersCreated;
+	    lidarDebug.detectedObjects = lidar.detectedObjects;
+
+	    lidarDebug.currentClusterValid = currentCluster.valid ? 1 : 0;
+	    lidarDebug.currentClusterPoints = currentCluster.pointsCount;
+	    lidarDebug.currentClusterStartAngle = currentCluster.startAngleDeg;
+	    lidarDebug.currentClusterEndAngle = currentCluster.endAngleDeg;
+	    lidarDebug.currentClusterCenterAngle = currentCluster.centerAngleDeg;
+	    lidarDebug.currentClusterDistance = currentCluster.averageDistanceMm;
+	    lidarDebug.currentClusterWidth = currentCluster.widthDeg;
+
+	    lidarDebug.bestClusterValid = bestCluster.valid ? 1 : 0;
+	    lidarDebug.bestClusterPoints = bestCluster.pointsCount;
+	    lidarDebug.bestClusterCenterAngle = bestCluster.centerAngleDeg;
+	    lidarDebug.bestClusterDistance = bestCluster.averageDistanceMm;
+	    lidarDebug.bestClusterWidth = bestCluster.widthDeg;
+
+	    lidarDebug.objectDetected = detectedObject.detected ? 1 : 0;
+	    lidarDebug.objectAngle = detectedObject.angleDeg;
+	    lidarDebug.objectDistance = detectedObject.distanceMm;
+	    lidarDebug.objectWidth = detectedObject.clusterWidthDeg;
+	    lidarDebug.objectPoints = detectedObject.pointsCount;
+
+	/******************************************************************************/
 
     /* USER CODE END WHILE */
 

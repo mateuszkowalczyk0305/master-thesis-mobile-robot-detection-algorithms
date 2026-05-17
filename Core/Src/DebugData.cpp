@@ -2,3 +2,4 @@
 
 IrDebugData irDebug = {};
 UltrasonicDebugData ultrasonicDebug = {};
+RPLidarDebugData lidarDebug = {};
