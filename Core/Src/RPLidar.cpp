@@ -1,5 +1,9 @@
 #include "RPLidar.h"
 
+/*
+ * Zakładamy jeden LiDAR w projekcie.
+ * Dzięki temu callback HAL-a może być w tym samym pliku co klasa.
+ */
 static RPLidar* activeLidarObject = nullptr;
 
 RPLidar::RPLidar(UART_HandleTypeDef* uartHandle,
@@ -157,11 +161,17 @@ bool RPLidar::isPointInDetectionZone(const RPLidarPoint& point) const
 
     bool angleInRange = false;
 
+    /*
+     * Normalny zakres, np. 60-120 stopni.
+     */
     if (MIN_DETECTION_ANGLE_DEG <= MAX_DETECTION_ANGLE_DEG)
     {
         angleInRange = (point.angleDeg >= MIN_DETECTION_ANGLE_DEG &&
                         point.angleDeg <= MAX_DETECTION_ANGLE_DEG);
     }
+    /*
+     * Zakres przez zero, np. 300-60 stopni.
+     */
     else
     {
         angleInRange = (point.angleDeg >= MIN_DETECTION_ANGLE_DEG ||
@@ -174,9 +184,9 @@ bool RPLidar::isPointInDetectionZone(const RPLidarPoint& point) const
 void RPLidar::processPointForDetection(const RPLidarPoint& point)
 {
     /*
-     * Początek nowego obrotu LiDAR-a.
+     * Początek nowego obrotu.
      * Kończymy ostatni klaster z poprzedniego obrotu.
-     * Najlepszy klaster z poprzedniego obrotu zostaje wynikiem detekcji.
+     * Najlepszy klaster staje się wynikiem detekcji.
      */
     if (point.startFlag)
     {
@@ -206,8 +216,7 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
     }
 
     /*
-     * Jeżeli punkt nie spełnia warunków strefy detekcji,
-     * to kończy aktualny klaster.
+     * Punkt poza strefą detekcji kończy aktualny klaster.
      */
     if (!isPointInDetectionZone(point))
     {
@@ -219,7 +228,7 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
     filteredPoints++;
 
     /*
-     * Jeżeli nie ma aktywnego klastra, zaczynamy nowy.
+     * Brak aktywnego klastra — zaczynamy nowy.
      */
     if (!currentCluster.valid)
     {
@@ -230,8 +239,7 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
     }
 
     /*
-     * Jeżeli punkt jest blisko poprzedniego, dopisujemy go do klastra.
-     * Jeżeli nie, zamykamy stary klaster i zaczynamy nowy.
+     * Punkt pasuje do klastra albo zaczyna nowy klaster.
      */
     if (hasPreviousFilteredPoint && isPointCloseToPrevious(point))
     {
@@ -251,6 +259,41 @@ bool RPLidar::getDetectedObject(RPLidarDetectedObject& object) const
 {
     object = detectedObject;
     return detectedObject.detected;
+}
+
+RPLidarObjectSector RPLidar::getObjectSector() const
+{
+    if (!detectedObject.detected)
+    {
+        return RPLidarObjectSector::None;
+    }
+
+    float angle = detectedObject.angleDeg;
+
+    /*
+     * Dla sektora detekcji 300-60 stopni:
+     *
+     * LEFT:   300-330 deg
+     * CENTER: 330-360 deg oraz 0-30 deg
+     * RIGHT:  30-60 deg
+     */
+
+    if (angle >= 330.0f || angle <= 30.0f)
+    {
+        return RPLidarObjectSector::Center;
+    }
+
+    if (angle > 30.0f && angle <= 60.0f)
+    {
+        return RPLidarObjectSector::Right;
+    }
+
+    if (angle >= 300.0f && angle < 330.0f)
+    {
+        return RPLidarObjectSector::Left;
+    }
+
+    return RPLidarObjectSector::None;
 }
 
 RPLidarCluster RPLidar::getCurrentCluster() const
@@ -341,11 +384,17 @@ bool RPLidar::isValidMeasurementNode() const
 
     bool checkBit = (nodeBuffer[1] & 0x01) != 0;
 
+    /*
+     * Start bit i jego negacja muszą być przeciwne.
+     */
     if (startBit == invertedStartBit)
     {
         return false;
     }
 
+    /*
+     * Bit kontrolny kąta powinien być ustawiony.
+     */
     if (!checkBit)
     {
         return false;
@@ -538,7 +587,7 @@ bool RPLidar::isBetterCluster(const RPLidarCluster& candidate,
     }
 
     /*
-     * W robocie sumo zwykle najbardziej interesuje nas najbliższy obiekt.
+     * Dla robota sumo wybieramy najbliższy obiekt.
      */
     return candidate.averageDistanceMm < currentBest.averageDistanceMm;
 }
@@ -555,6 +604,10 @@ float RPLidar::angleForwardDiff(float startDeg, float endDeg) const
     return diff;
 }
 
+/*
+ * Callback HAL-a zostaje w pliku klasy.
+ * Nie dodawaj drugiego HAL_UART_RxCpltCallback w main.cpp.
+ */
 extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
 {
     if (activeLidarObject != nullptr)

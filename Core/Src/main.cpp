@@ -107,7 +107,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /******************************************************/
-  /* Motion System initialization */
+  /* Motion system initialization */
 
   /* Motors */
   Motor m1(&htim4, TIM_CHANNEL_3, &htim4, TIM_CHANNEL_4);
@@ -126,13 +126,13 @@ int main(void)
 
   /******************************************************/
 
-  /* IR detection */
+  /* IR detection initialization */
   IrSensors irSensors(&hadc1);
   irSensors.startDma();
 
   /******************************************************/
 
-  /* Ultrasonic Detection */
+  /* Ultrasonic detection initialization */
   UltrasonicSensor leftUltrasonic(
       &htim2,
       GPIOB, GPIO_PIN_10,   // TRIG LEFT
@@ -153,7 +153,7 @@ int main(void)
 
   /******************************************************/
 
-  /* LiDAR Detection */
+  /* LiDAR detection initialization */
   RPLidar lidar(&huart2, &htim3, TIM_CHANNEL_2);
 
   lidar.init();
@@ -162,6 +162,7 @@ int main(void)
   RPLidarCluster currentCluster;
   RPLidarCluster bestCluster;
   RPLidarDetectedObject detectedObject;
+  RPLidarObjectSector lidarSector;
 
   /******************************************************/
 
@@ -293,7 +294,7 @@ int main(void)
 
 	/************************************** LiDAR **********************************/
 
-	    if (lidar.getPoint(lidarPoint))
+	  if (lidar.getPoint(lidarPoint))
 	    {
 	        lidarDebug.angleDeg = lidarPoint.angleDeg;
 	        lidarDebug.distanceMm = lidarPoint.distanceMm;
@@ -320,6 +321,7 @@ int main(void)
 	    currentCluster = lidar.getCurrentCluster();
 	    bestCluster = lidar.getBestCluster();
 	    lidar.getDetectedObject(detectedObject);
+	    lidarSector = lidar.getObjectSector();
 
 	    lidarDebug.receivedBytes = lidar.receivedBytes;
 	    lidarDebug.validPoints = lidar.validPoints;
@@ -348,6 +350,7 @@ int main(void)
 	    lidarDebug.objectDistance = detectedObject.distanceMm;
 	    lidarDebug.objectWidth = detectedObject.clusterWidthDeg;
 	    lidarDebug.objectPoints = detectedObject.pointsCount;
+	    lidarDebug.objectSector = static_cast<uint8_t>(lidarSector);
 
 	/******************************************************************************/
 

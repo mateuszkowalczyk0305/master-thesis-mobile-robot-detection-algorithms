@@ -41,6 +41,14 @@ struct RPLidarDetectedObject
     uint16_t pointsCount;
 };
 
+enum class RPLidarObjectSector : uint8_t
+{
+    None = 0,
+    Left = 1,
+    Center = 2,
+    Right = 3
+};
+
 class RPLidar
 {
 public:
@@ -65,7 +73,9 @@ public:
     bool isPointInDetectionZone(const RPLidarPoint& point) const;
 
     void processPointForDetection(const RPLidarPoint& point);
+
     bool getDetectedObject(RPLidarDetectedObject& object) const;
+    RPLidarObjectSector getObjectSector() const;
 
     RPLidarCluster getCurrentCluster() const;
     RPLidarCluster getBestCluster() const;
@@ -104,10 +114,12 @@ private:
     static constexpr uint8_t NODE_SIZE = 5;
 
     /*
-     * Parametry filtrowania punktów.
+     * Zakres detekcji.
      *
-     * Zakres 300-60 stopni oznacza sektor:
+     * 300-60 stopni oznacza sektor:
      * 300 ... 360 ... 0 ... 60
+     *
+     * To potem dostosujesz do fizycznego obrotu LiDAR-a na robocie.
      */
     static constexpr float MIN_DETECTION_DISTANCE_MM = 150.0f;
     static constexpr float MAX_DETECTION_DISTANCE_MM = 1500.0f;
@@ -119,18 +131,6 @@ private:
 
     /*
      * Parametry klastrowania.
-     *
-     * MAX_CLUSTER_ANGLE_GAP_DEG:
-     * maksymalna przerwa kątowa między kolejnymi punktami tego samego obiektu.
-     *
-     * MAX_CLUSTER_DISTANCE_GAP_MM:
-     * maksymalna różnica odległości między kolejnymi punktami tego samego obiektu.
-     *
-     * MIN_CLUSTER_POINTS:
-     * minimalna liczba punktów, żeby uznać klaster za obiekt.
-     *
-     * MAX_CLUSTER_WIDTH_DEG:
-     * zabezpieczenie przed uznaniem za obiekt bardzo szerokiej ściany albo tła.
      */
     static constexpr float MAX_CLUSTER_ANGLE_GAP_DEG = 3.0f;
     static constexpr float MAX_CLUSTER_DISTANCE_GAP_MM = 150.0f;

@@ -85,6 +85,14 @@ struct RPLidarDebugData
     float objectDistance;
     float objectWidth;
     uint16_t objectPoints;
+
+    /*
+     * 0 - brak obiektu
+     * 1 - LEFT
+     * 2 - CENTER
+     * 3 - RIGHT
+     */
+    uint8_t objectSector;
 };
 
 extern IrDebugData irDebug;
