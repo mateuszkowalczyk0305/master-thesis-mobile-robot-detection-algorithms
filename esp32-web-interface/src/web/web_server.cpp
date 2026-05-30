@@ -59,6 +59,50 @@ static const char *frameForMode(const String &mode) {
   return nullptr;
 }
 
+static const char *responsePrefixForMode(const String &mode) {
+  if (mode == "ir") return "#M:I,";
+  if (mode == "ultrasonic") return "#M:U,";
+  if (mode == "lidar") return "#M:L,";
+  if (mode == "fusion") return "#M:F,";
+  return nullptr;
+}
+
+static const char *frameForDirection(const String &direction) {
+  if (direction == "front") return "#D:1;";
+  if (direction == "back") return "#D:2;";
+  if (direction == "right") return "#D:3;";
+  if (direction == "left") return "#D:4;";
+  return nullptr;
+}
+
+static void clearUartRx() {
+  while (Serial1.available() > 0) {
+    Serial1.read();
+  }
+}
+
+static String readUartFrame(unsigned long timeoutMs) {
+  String response = "";
+  const unsigned long start = millis();
+
+  while ((millis() - start) < timeoutMs) {
+    while (Serial1.available() > 0) {
+      const char c = static_cast<char>(Serial1.read());
+      if (c == '\r' || c == '\n') {
+        continue;
+      }
+
+      response += c;
+      if (c == ';' || response.length() >= 64) {
+        return response;
+      }
+    }
+    delay(1);
+  }
+
+  return response;
+}
+
 static void setupRoutes() {
   server.on("/", HTTP_GET, []() {
     server.sendHeader("Cache-Control", "no-store");
@@ -153,9 +197,56 @@ static void setupRoutes() {
 
     Serial.print("UART: TX ");
     Serial.println(frame);
+    clearUartRx();
     Serial1.print(frame);
+    Serial1.flush();
 
-    sendJson(200, String("{\"ok\":true,\"mode\":\"") + mode + "\",\"frame\":\"" + frame + "\"}");
+    const String response = readUartFrame(3000);
+    const char *expectedPrefix = responsePrefixForMode(mode);
+    const bool accepted = (expectedPrefix != nullptr && response.startsWith(expectedPrefix) && response.endsWith(";"));
+
+    Serial.print("UART: RX detection ");
+    Serial.println(response.length() > 0 ? response : "(timeout)");
+
+    sendJson(accepted ? 200 : 504,
+             String("{\"ok\":") + (accepted ? "true" : "false") +
+               ",\"mode\":\"" + mode +
+               "\",\"frame\":\"" + frame +
+               "\",\"response\":\"" + response + "\"}");
+  });
+
+  server.on("/motion", HTTP_POST, []() {
+    String direction = "";
+    if (server.hasArg("direction")) {
+      direction = server.arg("direction");
+      direction.toLowerCase();
+    }
+
+    const char *frame = frameForDirection(direction);
+    if (!frame) {
+      Serial.print("HTTP: POST /motion unknown direction=");
+      Serial.println(direction);
+      sendJson(400, String("{\"ok\":false,\"error\":\"unknown_direction\",\"direction\":\"") + direction + "\"}");
+      return;
+    }
+
+    Serial.print("UART: TX ");
+    Serial.println(frame);
+    clearUartRx();
+    Serial1.print(frame);
+    Serial1.flush();
+
+    const String response = readUartFrame(500);
+    const bool accepted = (response == "#D:OK;" || response == "D:OK;");
+
+    Serial.print("UART: RX motion ");
+    Serial.println(response.length() > 0 ? response : "(timeout)");
+
+    sendJson(accepted ? 200 : 504,
+             String("{\"ok\":") + (accepted ? "true" : "false") +
+               ",\"direction\":\"" + direction +
+               "\",\"frame\":\"" + frame +
+               "\",\"response\":\"" + response + "\"}");
   });
 
   server.on("/info", HTTP_GET, []() {

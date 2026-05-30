@@ -38,7 +38,7 @@ static void printBootInfo() {
   Serial.print("IP: ");
   Serial.println(ip);
   printPageUrl(ip);
-  Serial.println("Endpoints: GET /  GET /state  POST /toggle  GET /info");
+  Serial.println("Endpoints: GET /  GET /state  POST /toggle  POST /motion  GET /info");
 }
 
 static bool bootInfoPrinted = false;
