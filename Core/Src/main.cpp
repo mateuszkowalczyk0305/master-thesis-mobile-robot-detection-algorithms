@@ -164,6 +164,8 @@ int main(void)
   RPLidarDetectedObject detectedObject;
   RPLidarObjectSector lidarSector;
 
+  robot.forward(1000);
+
   /******************************************************/
 
   /* USER CODE END 2 */
@@ -172,6 +174,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  robot.update();
 /************************************** IR SENSORS **********************************/
 //	  irSensors.update();
 //
@@ -256,7 +260,7 @@ int main(void)
 
 
 
-	  ///////////////////////////////////////////// US METODA ?????///////////////
+//	  ///////////////////////////////////////////// US METODA ?????///////////////
 //	  float leftDistance = 0.0f;
 //	  float rightDistance = 0.0f;
 //
@@ -294,63 +298,63 @@ int main(void)
 
 	/************************************** LiDAR **********************************/
 
-	  if (lidar.getPoint(lidarPoint))
-	    {
-	        lidarDebug.angleDeg = lidarPoint.angleDeg;
-	        lidarDebug.distanceMm = lidarPoint.distanceMm;
-	        lidarDebug.quality = lidarPoint.quality;
-	        lidarDebug.startFlag = lidarPoint.startFlag ? 1 : 0;
-	        lidarDebug.valid = lidarPoint.valid ? 1 : 0;
-
-	        if (lidar.isPointInDetectionZone(lidarPoint))
-	        {
-	            lidarDebug.inDetectionZone = 1;
-
-	            lidarDebug.filteredAngleDeg = lidarPoint.angleDeg;
-	            lidarDebug.filteredDistanceMm = lidarPoint.distanceMm;
-	            lidarDebug.filteredQuality = lidarPoint.quality;
-	        }
-	        else
-	        {
-	            lidarDebug.inDetectionZone = 0;
-	        }
-
-	        lidar.processPointForDetection(lidarPoint);
-	    }
-
-	    currentCluster = lidar.getCurrentCluster();
-	    bestCluster = lidar.getBestCluster();
-	    lidar.getDetectedObject(detectedObject);
-	    lidarSector = lidar.getObjectSector();
-
-	    lidarDebug.receivedBytes = lidar.receivedBytes;
-	    lidarDebug.validPoints = lidar.validPoints;
-	    lidarDebug.invalidNodes = lidar.invalidNodes;
-	    lidarDebug.filteredPoints = lidar.filteredPoints;
-
-	    lidarDebug.clustersCreated = lidar.clustersCreated;
-	    lidarDebug.detectedObjects = lidar.detectedObjects;
-
-	    lidarDebug.currentClusterValid = currentCluster.valid ? 1 : 0;
-	    lidarDebug.currentClusterPoints = currentCluster.pointsCount;
-	    lidarDebug.currentClusterStartAngle = currentCluster.startAngleDeg;
-	    lidarDebug.currentClusterEndAngle = currentCluster.endAngleDeg;
-	    lidarDebug.currentClusterCenterAngle = currentCluster.centerAngleDeg;
-	    lidarDebug.currentClusterDistance = currentCluster.averageDistanceMm;
-	    lidarDebug.currentClusterWidth = currentCluster.widthDeg;
-
-	    lidarDebug.bestClusterValid = bestCluster.valid ? 1 : 0;
-	    lidarDebug.bestClusterPoints = bestCluster.pointsCount;
-	    lidarDebug.bestClusterCenterAngle = bestCluster.centerAngleDeg;
-	    lidarDebug.bestClusterDistance = bestCluster.averageDistanceMm;
-	    lidarDebug.bestClusterWidth = bestCluster.widthDeg;
-
-	    lidarDebug.objectDetected = detectedObject.detected ? 1 : 0;
-	    lidarDebug.objectAngle = detectedObject.angleDeg;
-	    lidarDebug.objectDistance = detectedObject.distanceMm;
-	    lidarDebug.objectWidth = detectedObject.clusterWidthDeg;
-	    lidarDebug.objectPoints = detectedObject.pointsCount;
-	    lidarDebug.objectSector = static_cast<uint8_t>(lidarSector);
+//	  if (lidar.getPoint(lidarPoint))
+//	    {
+//	        lidarDebug.angleDeg = lidarPoint.angleDeg;
+//	        lidarDebug.distanceMm = lidarPoint.distanceMm;
+//	        lidarDebug.quality = lidarPoint.quality;
+//	        lidarDebug.startFlag = lidarPoint.startFlag ? 1 : 0;
+//	        lidarDebug.valid = lidarPoint.valid ? 1 : 0;
+//
+//	        if (lidar.isPointInDetectionZone(lidarPoint))
+//	        {
+//	            lidarDebug.inDetectionZone = 1;
+//
+//	            lidarDebug.filteredAngleDeg = lidarPoint.angleDeg;
+//	            lidarDebug.filteredDistanceMm = lidarPoint.distanceMm;
+//	            lidarDebug.filteredQuality = lidarPoint.quality;
+//	        }
+//	        else
+//	        {
+//	            lidarDebug.inDetectionZone = 0;
+//	        }
+//
+//	        lidar.processPointForDetection(lidarPoint);
+//	    }
+//
+//	    currentCluster = lidar.getCurrentCluster();
+//	    bestCluster = lidar.getBestCluster();
+//	    lidar.getDetectedObject(detectedObject);
+//	    lidarSector = lidar.getObjectSector();
+//
+//	    lidarDebug.receivedBytes = lidar.receivedBytes;
+//	    lidarDebug.validPoints = lidar.validPoints;
+//	    lidarDebug.invalidNodes = lidar.invalidNodes;
+//	    lidarDebug.filteredPoints = lidar.filteredPoints;
+//
+//	    lidarDebug.clustersCreated = lidar.clustersCreated;
+//	    lidarDebug.detectedObjects = lidar.detectedObjects;
+//
+//	    lidarDebug.currentClusterValid = currentCluster.valid ? 1 : 0;
+//	    lidarDebug.currentClusterPoints = currentCluster.pointsCount;
+//	    lidarDebug.currentClusterStartAngle = currentCluster.startAngleDeg;
+//	    lidarDebug.currentClusterEndAngle = currentCluster.endAngleDeg;
+//	    lidarDebug.currentClusterCenterAngle = currentCluster.centerAngleDeg;
+//	    lidarDebug.currentClusterDistance = currentCluster.averageDistanceMm;
+//	    lidarDebug.currentClusterWidth = currentCluster.widthDeg;
+//
+//	    lidarDebug.bestClusterValid = bestCluster.valid ? 1 : 0;
+//	    lidarDebug.bestClusterPoints = bestCluster.pointsCount;
+//	    lidarDebug.bestClusterCenterAngle = bestCluster.centerAngleDeg;
+//	    lidarDebug.bestClusterDistance = bestCluster.averageDistanceMm;
+//	    lidarDebug.bestClusterWidth = bestCluster.widthDeg;
+//
+//	    lidarDebug.objectDetected = detectedObject.detected ? 1 : 0;
+//	    lidarDebug.objectAngle = detectedObject.angleDeg;
+//	    lidarDebug.objectDistance = detectedObject.distanceMm;
+//	    lidarDebug.objectWidth = detectedObject.clusterWidthDeg;
+//	    lidarDebug.objectPoints = detectedObject.pointsCount;
+//	    lidarDebug.objectSector = static_cast<uint8_t>(lidarSector);
 
 	/******************************************************************************/
 
