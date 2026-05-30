@@ -67,12 +67,14 @@ static const char *responsePrefixForMode(const String &mode) {
   return nullptr;
 }
 
-static const char *frameForDirection(const String &direction) {
-  if (direction == "front") return "#D:1;";
-  if (direction == "back") return "#D:2;";
-  if (direction == "right") return "#D:3;";
-  if (direction == "left") return "#D:4;";
-  return nullptr;
+static String frameForDirection(const String &direction, uint8_t protocolSpeed) {
+  const String speed = String(protocolSpeed);
+  if (direction == "front") return String("#D:1,") + speed + ";";
+  if (direction == "back") return String("#D:2,") + speed + ";";
+  if (direction == "right") return String("#D:3,") + speed + ";";
+  if (direction == "left") return String("#D:4,") + speed + ";";
+  if (direction == "stop") return String("#D,5,") + speed + ";";
+  return "";
 }
 
 static void clearUartRx() {
@@ -222,8 +224,17 @@ static void setupRoutes() {
       direction.toLowerCase();
     }
 
-    const char *frame = frameForDirection(direction);
-    if (!frame) {
+    uint8_t uiSpeed = 5;
+    if (server.hasArg("speed")) {
+      const int value = server.arg("speed").toInt();
+      if (value >= 1 && value <= 10) {
+        uiSpeed = static_cast<uint8_t>(value);
+      }
+    }
+    const uint8_t protocolSpeed = uiSpeed - 1;
+
+    const String frame = frameForDirection(direction, protocolSpeed);
+    if (frame.length() == 0) {
       Serial.print("HTTP: POST /motion unknown direction=");
       Serial.println(direction);
       sendJson(400, String("{\"ok\":false,\"error\":\"unknown_direction\",\"direction\":\"") + direction + "\"}");
@@ -245,7 +256,9 @@ static void setupRoutes() {
     sendJson(accepted ? 200 : 504,
              String("{\"ok\":") + (accepted ? "true" : "false") +
                ",\"direction\":\"" + direction +
-               "\",\"frame\":\"" + frame +
+               "\",\"speed\":" + String(uiSpeed) +
+               ",\"protocolSpeed\":" + String(protocolSpeed) +
+               ",\"frame\":\"" + frame +
                "\",\"response\":\"" + response + "\"}");
   });
 

@@ -11,10 +11,15 @@
 
 `Motion:`
 
-- Front: #D:1;
-- Back:  #D:2;
-- Right: #D:3;
-- Left:  #D:4; 
+- Front: #D:1,x;
+- Back:  #D:2,x;
+- Right: #D:3,x;
+- Left:  #D:4,x; 
+- Stop:  #D,5,x;
+
+x - number 0-9. 
+
+0 = min speed, 9 = max speed.
 
 ## STM32 as slave (responses):
 

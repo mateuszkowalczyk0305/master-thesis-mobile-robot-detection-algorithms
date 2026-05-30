@@ -8,7 +8,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Panel sterowania ESP32-C3</title>
+    <title>Panel sterowania</title>
     <style>
       :root {
         color-scheme: dark;
@@ -19,11 +19,11 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         --line: rgba(244, 241, 234, .16);
         --text: #f4f1ea;
         --muted: #aaa39a;
-        --cyan: #d9dde1;
-        --green: #b9d765;
+        --cyan: #4f7f94;
+        --green: #8fa34a;
         --amber: #f2b84b;
         --rose: #d83b36;
-        --violet: #b7b2a8;
+        --violet: #9a6a38;
         --shadow: 0 18px 42px rgba(0, 0, 0, .34);
       }
 
@@ -192,6 +192,9 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         text-align: left;
         position: relative;
         overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025)),
+          repeating-linear-gradient(135deg, transparent 0 10px, rgba(255, 255, 255, .025) 10px 12px);
       }
 
       .mode-btn::after {
@@ -200,10 +203,9 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         inset: auto -26px -36px auto;
         width: 86px;
         height: 86px;
-        border-radius: 50%;
         opacity: .42;
         background: var(--mode-color, var(--cyan));
-        filter: blur(18px);
+        filter: blur(14px);
         transition: opacity .18s ease, transform .18s ease;
       }
 
@@ -232,7 +234,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
       .mode-ultra { --mode-color: var(--rose); }
       .mode-ir { --mode-color: var(--amber); }
       .mode-lidar { --mode-color: var(--cyan); }
-      .mode-fusion { --mode-color: var(--violet); }
+      .mode-fusion { --mode-color: var(--green); }
 
       .status-board {
         display: grid;
@@ -278,8 +280,14 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         display: grid;
         grid-template-columns: repeat(3, minmax(72px, 1fr));
         gap: 10px;
-        width: min(340px, 100%);
-        margin: 0 auto;
+        width: 100%;
+      }
+
+      .motion-control-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 340px) minmax(180px, 1fr);
+        gap: 14px;
+        align-items: center;
       }
 
       .motion-spacer { min-height: 72px; }
@@ -312,13 +320,63 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         font-weight: 900;
       }
 
-      .motion-btn:nth-of-type(2) .arrow { background: var(--amber); }
-      .motion-btn:nth-of-type(3) .arrow { background: var(--rose); }
-      .motion-btn:nth-of-type(4) .arrow { background: var(--amber); }
+      .motion-btn[data-direction="front"] .arrow { background: var(--rose); }
+      .motion-btn[data-direction="left"] .arrow { background: var(--amber); }
+      .motion-btn[data-direction="stop"] .arrow { background: var(--cyan); }
+      .motion-btn[data-direction="right"] .arrow { background: var(--rose); }
+      .motion-btn[data-direction="back"] .arrow { background: var(--amber); }
 
       .motion-btn span:last-child {
         font-size: 13px;
         font-weight: 800;
+      }
+
+      .speed-panel {
+        min-height: 150px;
+        padding: 13px;
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, rgba(242, 184, 75, .12), rgba(216, 59, 54, .07)),
+          rgba(255, 255, 255, .045);
+      }
+
+      .speed-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .speed-head span {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .speed-value {
+        min-width: 54px;
+        padding: 5px 8px;
+        border: 1px solid rgba(242, 184, 75, .3);
+        border-radius: 8px;
+        color: #081116;
+        background: var(--amber);
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .speed-slider {
+        width: 100%;
+        margin: 8px 0;
+        accent-color: var(--amber);
+      }
+
+      .speed-scale {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
       }
 
       .telemetry {
@@ -354,7 +412,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
       .actions {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-top: 12px;
       }
@@ -366,7 +424,6 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         font-weight: 800;
       }
 
-      .refresh-btn { background: rgba(217, 221, 225, .1); }
       .toggle-btn { background: rgba(255, 200, 87, .13); }
       .blink-btn { background: rgba(255, 107, 138, .13); }
 
@@ -516,6 +573,11 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         border-color: rgba(185, 215, 101, .34);
       }
 
+      .log-entry.pending {
+        color: var(--muted);
+        border-color: rgba(242, 184, 75, .22);
+      }
+
       .log-entry.timeout {
         color: #f2b84b;
         border-color: rgba(216, 59, 54, .34);
@@ -556,6 +618,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         .mode-grid { grid-template-columns: 1fr; }
         .mode-btn { min-height: 112px; }
         .status-board { grid-template-columns: 1fr; }
+        .motion-control-layout { grid-template-columns: 1fr; }
         .motion-grid { grid-template-columns: repeat(3, minmax(64px, 1fr)); gap: 8px; }
         .motion-btn { min-height: 72px; }
         .motion-spacer { min-height: 72px; }
@@ -580,7 +643,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
       <header class="topbar">
         <div>
           <p class="eyebrow">Mateusz Kowalczyk 268533</p>
-          <h1>Panel sterowania ESP32-C3</h1>
+          <h1>Panel sterowania</h1>
         </div>
         <div class="chips" aria-label="Parametry komunikacji">
           <span class="chip">UART: Serial1</span>
@@ -639,28 +702,42 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
               </div>
             </div>
 
-            <div class="motion-grid" aria-label="Sterowanie kierunkiem ruchu">
-              <span class="motion-spacer" aria-hidden="true"></span>
-              <button class="motion-btn" data-direction="front" title="Przód" aria-label="Ruch do przodu">
-                <span class="arrow">&uarr;</span>
-                <span>Przód</span>
-              </button>
-              <span class="motion-spacer" aria-hidden="true"></span>
-              <button class="motion-btn" data-direction="left" title="Lewo" aria-label="Ruch w lewo">
-                <span class="arrow">&larr;</span>
-                <span>Lewo</span>
-              </button>
-              <span class="motion-spacer" aria-hidden="true"></span>
-              <button class="motion-btn" data-direction="right" title="Prawo" aria-label="Ruch w prawo">
-                <span class="arrow">&rarr;</span>
-                <span>Prawo</span>
-              </button>
-              <span class="motion-spacer" aria-hidden="true"></span>
-              <button class="motion-btn" data-direction="back" title="Tył" aria-label="Ruch do tyłu">
-                <span class="arrow">&darr;</span>
-                <span>Tył</span>
-              </button>
-              <span class="motion-spacer" aria-hidden="true"></span>
+            <div class="motion-control-layout">
+              <div class="motion-grid" aria-label="Sterowanie kierunkiem ruchu">
+                <span class="motion-spacer" aria-hidden="true"></span>
+                <button class="motion-btn" data-direction="front" title="Przód" aria-label="Ruch do przodu">
+                  <span class="arrow">&uarr;</span>
+                  <span>Przód</span>
+                </button>
+                <span class="motion-spacer" aria-hidden="true"></span>
+                <button class="motion-btn" data-direction="left" title="Lewo" aria-label="Ruch w lewo">
+                  <span class="arrow">&larr;</span>
+                  <span>Lewo</span>
+                </button>
+                <button class="motion-btn" data-direction="stop" title="Stop" aria-label="Zatrzymanie robota">
+                  <span class="arrow">&#9632;</span>
+                  <span>Stop</span>
+                </button>
+                <button class="motion-btn" data-direction="right" title="Prawo" aria-label="Ruch w prawo">
+                  <span class="arrow">&rarr;</span>
+                  <span>Prawo</span>
+                </button>
+                <span class="motion-spacer" aria-hidden="true"></span>
+                <button class="motion-btn" data-direction="back" title="Tył" aria-label="Ruch do tyłu">
+                  <span class="arrow">&darr;</span>
+                  <span>Tył</span>
+                </button>
+                <span class="motion-spacer" aria-hidden="true"></span>
+              </div>
+
+              <div class="speed-panel">
+                <div class="speed-head">
+                  <span>Prędkość</span>
+                  <output class="speed-value" id="speedValue">5/10</output>
+                </div>
+                <input class="speed-slider" id="speedSlider" type="range" min="1" max="10" step="1" value="5" aria-label="Prędkość robota" />
+                <div class="speed-scale"><span>Min</span><span>Max</span></div>
+              </div>
             </div>
           </section>
         </div>
@@ -681,13 +758,12 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
           <div class="actions">
             <button class="action-btn blink-btn" id="blink" title="Test LED">Test LED</button>
             <button class="action-btn toggle-btn" id="toggle" title="Przełącz LED">Przełącz</button>
-            <button class="action-btn refresh-btn" id="refresh" title="Odśwież stan">Odśwież</button>
           </div>
 
           <div class="service-toggle">
             <div class="service-copy">
               <strong>Tryb serwisowy</strong>
-              <span>Pokazuje transmisję UART na żywo i protokół komunikacji.</span>
+              <span>Pokazuje komunikacyjne logi serwisowe w czasie rzeczywistym.</span>
             </div>
             <label class="switch" title="Tryb serwisowy">
               <input id="serviceMode" type="checkbox" />
@@ -695,11 +771,11 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
             </label>
           </div>
 
-          <section class="service-panel" id="servicePanel" aria-label="UART logs">
-            <h3>UART logs na żywo</h3>
+          <section class="service-panel" id="servicePanel" aria-label="Logi Komunikacji">
+            <h3>Logi Komunikacji</h3>
             <div class="uart-log-table">
-              <div class="uart-log-head">ESP32</div>
-              <div class="uart-log-head">STM32</div>
+              <div class="uart-log-head">Wysłano</div>
+              <div class="uart-log-head">Odpowiedź</div>
               <div class="uart-log-cell" id="espLog">
                 <code class="log-entry empty">brak transmisji</code>
               </div>
@@ -710,17 +786,21 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
             <h3 class="protocol-title">Protokół komunikacji</h3>
             <div class="uart-log-table protocol-table">
-              <div class="uart-log-head">ESP32</div>
-              <div class="uart-log-head">STM32</div>
+              <div class="uart-log-head">Polecenia</div>
+              <div class="uart-log-head">Odpowiedzi</div>
               <div class="uart-log-cell">
                 <code>#M:U;</code>
                 <code>#M:I;</code>
                 <code>#M:L;</code>
                 <code>#M:F;</code>
-                <code>#D:1;</code>
-                <code>#D:2;</code>
-                <code>#D:3;</code>
-                <code>#D:4;</code>
+                <code>#D:1,x;</code>
+                <code>#D:2,x;</code>
+                <code>#D:3,x;</code>
+                <code>#D:4,x;</code>
+                <code>#D,5,x;</code>
+                <code>UI 1-10 -> x 0-9</code>
+                <code>HTTP POST /toggle</code>
+                <code>HTTP POST /blink count=3&amp;ms=150</code>
               </div>
               <div class="uart-log-cell">
                 <code>#M:U,time_ms;</code>
@@ -728,6 +808,8 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
                 <code>#M:L,time_ms;</code>
                 <code>#M:F,time_ms;</code>
                 <code>#D:OK;</code>
+                <code>JSON led=true/false</code>
+                <code>JSON ok=true</code>
               </div>
             </div>
           </section>
@@ -750,11 +832,12 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         lidar: "#M:L;",
         fusion: "#M:F;"
       };
-      const directionFrames = {
-        front: "#D:1;",
-        back: "#D:2;",
-        right: "#D:3;",
-        left: "#D:4;"
+      const directionCodes = {
+        front: "#D:1",
+        back: "#D:2",
+        right: "#D:3",
+        left: "#D:4",
+        stop: "#D,5"
       };
 
       function setCountdownText(text) {
@@ -772,19 +855,59 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
         setTimeout(() => btn.classList.remove("sent"), 360);
       }
 
-      function appendUartLog(targetId, value, state) {
-        const target = $(targetId);
-        const empty = target.querySelector(".empty");
-        if (empty) empty.remove();
+      function getUiSpeed() {
+        return Number($("speedSlider").value) || 5;
+      }
 
-        const item = document.createElement("code");
+      function getProtocolSpeed(uiSpeed) {
+        return Math.max(0, Math.min(9, uiSpeed - 1));
+      }
+
+      function formatDirectionFrame(direction, uiSpeed) {
+        const code = directionCodes[direction] || "#D:?";
+        return code + "," + getProtocolSpeed(uiSpeed) + ";";
+      }
+
+      function updateSpeedDisplay() {
+        const uiSpeed = getUiSpeed();
+        $("speedValue").textContent = uiSpeed + "/10";
+      }
+
+      function trimLogs() {
+        [$("espLog"), $("stmLog")].forEach((target) => {
+          while (target.children.length > 12) {
+            target.removeChild(target.lastElementChild);
+          }
+        });
+      }
+
+      function clearEmptyLogEntries() {
+        document.querySelectorAll(".log-entry.empty").forEach((item) => item.remove());
+      }
+
+      function addCommunicationLog(espValue, stmValue) {
+        clearEmptyLogEntries();
+
+        const espItem = document.createElement("code");
+        espItem.className = "log-entry tx";
+        espItem.textContent = espValue || "brak danych";
+        $("espLog").prepend(espItem);
+
+        const stmItem = document.createElement("code");
+        stmItem.className = "log-entry pending";
+        stmItem.textContent = stmValue || "oczekiwanie";
+        $("stmLog").prepend(stmItem);
+
+        trimLogs();
+        return stmItem;
+      }
+
+      function updateCommunicationResponse(item, value, state) {
+        if (!item) {
+          return;
+        }
         item.className = "log-entry" + (state ? " " + state : "");
         item.textContent = value || "timeout";
-        target.prepend(item);
-
-        while (target.children.length > 12) {
-          target.removeChild(target.lastElementChild);
-        }
       }
 
       async function refreshLed() {
@@ -838,7 +961,7 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
       }
 
       async function sendDetection(mode) {
-        appendUartLog("espLog", modeFrames[mode] || "błąd", "tx");
+        const responseLog = addCommunicationLog(modeFrames[mode] || "błąd", "oczekiwanie");
         try {
           const r = await fetch("/go", {
             method: "POST",
@@ -846,24 +969,26 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
             body: "mode=" + encodeURIComponent(mode)
           });
           const j = await r.json();
-          appendUartLog("stmLog", j.response || "timeout", r.ok ? "rx" : "timeout");
+          updateCommunicationResponse(responseLog, j.response || "timeout", r.ok ? "rx" : "timeout");
         } catch (error) {
-          appendUartLog("stmLog", "błąd HTTP", "timeout");
+          updateCommunicationResponse(responseLog, "błąd HTTP", "timeout");
         }
       }
 
       async function sendMotion(direction) {
-        appendUartLog("espLog", directionFrames[direction] || "błąd", "tx");
+        const uiSpeed = getUiSpeed();
+        const frame = formatDirectionFrame(direction, uiSpeed);
+        const responseLog = addCommunicationLog(frame, "oczekiwanie");
         try {
           const r = await fetch("/motion", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: "direction=" + encodeURIComponent(direction)
+            body: "direction=" + encodeURIComponent(direction) + "&speed=" + encodeURIComponent(uiSpeed)
           });
           const j = await r.json();
-          appendUartLog("stmLog", j.response || "timeout", r.ok ? "rx" : "timeout");
+          updateCommunicationResponse(responseLog, j.response || "timeout", r.ok ? "rx" : "timeout");
         } catch (error) {
-          appendUartLog("stmLog", "błąd HTTP", "timeout");
+          updateCommunicationResponse(responseLog, "błąd HTTP", "timeout");
         }
       }
 
@@ -889,22 +1014,37 @@ static const char INDEX_HTML[] PROGMEM = R"rawliteral(
       });
 
       $("toggle").addEventListener("click", async () => {
-        await fetch("/toggle", { method: "POST" });
-        await refreshLed();
+        const responseLog = addCommunicationLog("HTTP POST /toggle", "oczekiwanie");
+        try {
+          const r = await fetch("/toggle", { method: "POST" });
+          const j = await r.json();
+          updateCommunicationResponse(responseLog, "HTTP " + r.status + " LED: " + (j.led ? "WYŁ." : "WŁ."), r.ok ? "rx" : "timeout");
+          await refreshLed();
+        } catch (error) {
+          updateCommunicationResponse(responseLog, "błąd HTTP", "timeout");
+        }
       });
 
       $("blink").addEventListener("click", async () => {
-        await fetch("/blink", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "count=3&ms=150"
-        });
+        const responseLog = addCommunicationLog("HTTP POST /blink count=3&ms=150", "oczekiwanie");
+        try {
+          const r = await fetch("/blink", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "count=3&ms=150"
+          });
+          const j = await r.json();
+          updateCommunicationResponse(responseLog, "HTTP " + r.status + " " + (j.ok ? "ok=true" : "błąd"), r.ok ? "rx" : "timeout");
+        } catch (error) {
+          updateCommunicationResponse(responseLog, "błąd HTTP", "timeout");
+        }
       });
 
-      $("refresh").addEventListener("click", refreshAll);
       $("serviceMode").addEventListener("change", updateServicePanel);
+  $("speedSlider").addEventListener("input", updateSpeedDisplay);
 
       refreshAll();
+  updateSpeedDisplay();
       updateServicePanel();
     </script>
   </body>
