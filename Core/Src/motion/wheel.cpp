@@ -1,7 +1,8 @@
 #include "motion/wheel.hpp"
 
-Wheel::Wheel(Motor& motor_ref)
-    : motor(motor_ref)
+Wheel::Wheel(Motor& motor_ref, bool invert_direction)
+    : motor(motor_ref),
+      direction_inverted(invert_direction)
 {
 }
 
@@ -28,6 +29,12 @@ void Wheel::setSpeed(Direction dir, int speed)
 
     if(dir == Direction::Backward)
         speed = -speed;
+
+    if(direction_inverted)
+        speed = -speed;
+
+    if(speed == target_speed)
+        return;
 
     target_speed = speed;
     current_speed = speed;

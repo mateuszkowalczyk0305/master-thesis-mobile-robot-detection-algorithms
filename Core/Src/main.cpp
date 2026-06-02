@@ -32,6 +32,7 @@
 #include "IrSensors.h"
 #include "UltrasonicSensor.h"
 #include "RPLidar.h"
+#include "Esp32CommandReceiver.h"
 
 #include "DebugData.h"
 /* USER CODE END Includes */
@@ -65,6 +66,54 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+static constexpr int PROTOCOL_SPEED_MAX = 9;
+static constexpr int ROBOT_MIN_PWM = 800;
+static constexpr int ROBOT_MAX_PWM = 999;
+
+static int protocolSpeedToPwm(uint8_t protocolSpeed)
+{
+  if (protocolSpeed > PROTOCOL_SPEED_MAX)
+  {
+    protocolSpeed = PROTOCOL_SPEED_MAX;
+  }
+
+  return ROBOT_MIN_PWM +
+      ((ROBOT_MAX_PWM - ROBOT_MIN_PWM) * static_cast<int>(protocolSpeed)) /
+      PROTOCOL_SPEED_MAX;
+}
+
+static void executeMotionCommand(Robot& robot, const Esp32Command& command)
+{
+  const int speed = protocolSpeedToPwm(command.speed);
+
+  switch (command.motionDirection)
+  {
+    case Esp32MotionDirection::Front:
+      robot.forward(speed);
+      break;
+
+    case Esp32MotionDirection::Back:
+      robot.backward(speed);
+      break;
+
+    case Esp32MotionDirection::Right:
+      robot.turnRight(speed);
+      break;
+
+    case Esp32MotionDirection::Left:
+      robot.turnLeft(speed);
+      break;
+
+    case Esp32MotionDirection::Stop:
+      robot.stop();
+      break;
+
+    default:
+      break;
+  }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -118,8 +167,9 @@ int main(void)
   /* Wheels */
   Wheel w1(m1);
   Wheel w2(m2);
-  Wheel w3(m3);
-  Wheel w4(m4);
+  /* Rear wheels are mounted with reversed motor direction. */
+  Wheel w3(m3, true);
+  Wheel w4(m4, true);
 
   /* Robot */
   Robot robot(w1, w2, w3, w4);
@@ -164,7 +214,11 @@ int main(void)
   RPLidarDetectedObject detectedObject;
   RPLidarObjectSector lidarSector;
 
-  robot.forward(1000);
+  Esp32CommandReceiver esp32CommandReceiver(&huart1);
+  esp32CommandReceiver.init();
+
+  Esp32Command esp32Command;
+  Esp32DetectionMode activeDetectionMode = Esp32DetectionMode::None;
 
   /******************************************************/
 
@@ -176,6 +230,20 @@ int main(void)
   {
 
 	  robot.update();
+
+      if (esp32CommandReceiver.getCommand(esp32Command))
+      {
+        if (esp32Command.type == Esp32CommandType::Motion)
+        {
+          executeMotionCommand(robot, esp32Command);
+          esp32CommandReceiver.sendMotionOk();
+        }
+        else if (esp32Command.type == Esp32CommandType::DetectionMode)
+        {
+          activeDetectionMode = esp32Command.detectionMode;
+          esp32CommandReceiver.sendDetectionResponse(activeDetectionMode);
+        }
+      }
 /************************************** IR SENSORS **********************************/
 //	  irSensors.update();
 //

@@ -29,18 +29,18 @@ void Robot::backward(int speed)
 
 void Robot::turnLeft(int speed)
 {
-    w1.setSpeed(Direction::Backward, speed);
-    w2.setSpeed(Direction::Forward, speed);
-    w3.setSpeed(Direction::Backward, speed);
-    w4.setSpeed(Direction::Forward, speed);
+    w1.setSpeed(Direction::Forward, speed);
+    w2.stop();
+    w3.setSpeed(Direction::Forward, speed);
+    w4.stop();
 }
 
 void Robot::turnRight(int speed)
 {
-    w1.setSpeed(Direction::Forward, speed);
-    w2.setSpeed(Direction::Backward, speed);
-    w3.setSpeed(Direction::Forward, speed);
-    w4.setSpeed(Direction::Backward, speed);
+    w1.stop();
+    w2.setSpeed(Direction::Forward, speed);
+    w3.stop();
+    w4.setSpeed(Direction::Forward, speed);
 }
 
 void Robot::stop()

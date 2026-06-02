@@ -1,4 +1,5 @@
 #include "RPLidar.h"
+#include "Esp32CommandReceiver.h"
 
 /*
  * Zakładamy jeden LiDAR w projekcie.
@@ -614,4 +615,11 @@ extern "C" void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
     {
         activeLidarObject->onUartRxComplete(huart);
     }
+
+    Esp32_OnUartRx(huart);
+}
+
+extern "C" void HAL_UART_ErrorCallback(UART_HandleTypeDef* huart)
+{
+    Esp32_OnUartError(huart);
 }

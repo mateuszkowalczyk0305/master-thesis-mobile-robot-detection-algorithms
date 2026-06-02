@@ -39,15 +39,20 @@ void IrSensors::update()
     /*
      * DMA cały czas aktualizuje adcBuffer_.
      *
-     * Kolejność:
-     * adcBuffer_[0] -> ADC1_IN0 -> LEFT
-     * adcBuffer_[1] -> ADC1_IN1 -> CENTER
-     * adcBuffer_[2] -> ADC1_IN4 -> RIGHT
+     * Lewy i prawy czujnik są fizycznie zamienione miejscami.
+     * Logiczne LEFT czyta ADC1_IN4, a logiczne RIGHT czyta ADC1_IN0.
      */
+
+    constexpr uint8_t adcIndexForSensor[SENSOR_COUNT] =
+    {
+        2,
+        1,
+        0
+    };
 
     for (uint8_t i = 0; i < SENSOR_COUNT; i++)
     {
-        sensors_[i].adcRaw = adcBuffer_[i];
+        sensors_[i].adcRaw = adcBuffer_[adcIndexForSensor[i]];
 
         sensors_[i].voltage =
             (static_cast<float>(sensors_[i].adcRaw) * ADC_REF_VOLTAGE) / ADC_MAX_VALUE;
