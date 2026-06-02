@@ -43,6 +43,22 @@ void Robot::turnRight(int speed)
     w4.setSpeed(Direction::Forward, speed);
 }
 
+void Robot::rotateLeft(int speed)
+{
+    w1.setSpeed(Direction::Forward, speed);
+    w2.setSpeed(Direction::Backward, speed);
+    w3.setSpeed(Direction::Forward, speed);
+    w4.setSpeed(Direction::Backward, speed);
+}
+
+void Robot::rotateRight(int speed)
+{
+    w1.setSpeed(Direction::Backward, speed);
+    w2.setSpeed(Direction::Forward, speed);
+    w3.setSpeed(Direction::Backward, speed);
+    w4.setSpeed(Direction::Forward, speed);
+}
+
 void Robot::stop()
 {
     w1.stop();

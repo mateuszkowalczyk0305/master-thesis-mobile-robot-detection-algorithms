@@ -70,6 +70,10 @@ void SystemClock_Config(void);
 static constexpr int PROTOCOL_SPEED_MAX = 9;
 static constexpr int ROBOT_MIN_PWM = 800;
 static constexpr int ROBOT_MAX_PWM = 999;
+static constexpr int IR_DETECTION_PWM = 850;
+static constexpr float IR_TARGET_STOP_CM = 20.0f;
+static constexpr uint32_t IR_DETECTION_TIMEOUT_US = 10000000U;
+static constexpr uint32_t IR_CONTROL_PERIOD_US = 10000U;
 
 static int protocolSpeedToPwm(uint8_t protocolSpeed)
 {
@@ -111,6 +115,193 @@ static void executeMotionCommand(Robot& robot, const Esp32Command& command)
 
     default:
       break;
+  }
+}
+
+struct DetectionRunResult
+{
+  uint32_t elapsedUs = 0;
+  IrSensors::Sector irSector = IrSensors::Sector::None;
+  uint8_t stateCode = 0;
+  bool targetReached = false;
+};
+
+enum class IrDetectionState : uint8_t
+{
+  Search = 0,
+  Approach = 1,
+  TargetReached = 2,
+  Timeout = 3
+};
+
+static uint32_t detectionTimerUs()
+{
+  return __HAL_TIM_GET_COUNTER(&htim2);
+}
+
+static void runRobotForControlPeriod(Robot& robot)
+{
+  const uint32_t periodStartUs = detectionTimerUs();
+
+  while ((detectionTimerUs() - periodStartUs) < IR_CONTROL_PERIOD_US)
+  {
+    robot.update();
+  }
+}
+
+static float minDistance(float firstDistanceCm, float secondDistanceCm)
+{
+  return (firstDistanceCm < secondDistanceCm) ? firstDistanceCm : secondDistanceCm;
+}
+
+static bool isIrTargetReached(IrSensors& irSensors, IrSensors::Sector sector)
+{
+  const IrSensors::SensorData leftData =
+      irSensors.getSensorData(IrSensors::Sensor::Left);
+  const IrSensors::SensorData centerData =
+      irSensors.getSensorData(IrSensors::Sensor::Center);
+  const IrSensors::SensorData rightData =
+      irSensors.getSensorData(IrSensors::Sensor::Right);
+
+  const float closestFrontDistanceCm =
+      minDistance(centerData.filteredCm,
+                  minDistance(leftData.filteredCm, rightData.filteredCm));
+
+  if (sector == IrSensors::Sector::Center)
+  {
+    return centerData.filteredCm <= IR_TARGET_STOP_CM;
+  }
+
+  if (sector == IrSensors::Sector::FrontWide)
+  {
+    return closestFrontDistanceCm <= IR_TARGET_STOP_CM;
+  }
+
+  return false;
+}
+
+static IrDetectionState nextIrDetectionState(IrDetectionState state,
+                                             IrSensors::Sector sector,
+                                             bool targetReached)
+{
+  if (targetReached)
+  {
+    return IrDetectionState::TargetReached;
+  }
+
+  if (sector == IrSensors::Sector::None)
+  {
+    return IrDetectionState::Search;
+  }
+
+  if (state == IrDetectionState::Search)
+  {
+    return IrDetectionState::Approach;
+  }
+
+  return state;
+}
+
+static void driveIrSearchState(Robot& robot)
+{
+  robot.rotateLeft(IR_DETECTION_PWM);
+}
+
+static void driveIrApproachState(Robot& robot, IrSensors::Sector sector)
+{
+  switch (sector)
+  {
+    case IrSensors::Sector::Center:
+    case IrSensors::Sector::FrontWide:
+      robot.forward(IR_DETECTION_PWM);
+      break;
+
+    case IrSensors::Sector::Left:
+      robot.rotateLeft(IR_DETECTION_PWM);
+      break;
+
+    case IrSensors::Sector::Right:
+      robot.rotateRight(IR_DETECTION_PWM);
+      break;
+
+    case IrSensors::Sector::None:
+    default:
+      robot.stop();
+      break;
+  }
+}
+
+static void driveIrDetectionState(Robot& robot,
+                                  IrDetectionState state,
+                                  IrSensors::Sector sector)
+{
+  switch (state)
+  {
+    case IrDetectionState::Search:
+      driveIrSearchState(robot);
+      break;
+
+    case IrDetectionState::Approach:
+      driveIrApproachState(robot, sector);
+      break;
+
+    case IrDetectionState::TargetReached:
+    case IrDetectionState::Timeout:
+    default:
+      robot.stop();
+      break;
+  }
+}
+
+static DetectionRunResult executeIrDetection(Robot& robot, IrSensors& irSensors)
+{
+  DetectionRunResult result;
+  IrDetectionState state = IrDetectionState::Search;
+  const uint32_t startUs = detectionTimerUs();
+
+  while ((detectionTimerUs() - startUs) < IR_DETECTION_TIMEOUT_US)
+  {
+    irSensors.update();
+    result.irSector = irSensors.getSector();
+    state = nextIrDetectionState(
+        state,
+        result.irSector,
+        isIrTargetReached(irSensors, result.irSector));
+    result.stateCode = static_cast<uint8_t>(state);
+
+    if (state == IrDetectionState::TargetReached)
+    {
+      result.targetReached = true;
+      break;
+    }
+
+    driveIrDetectionState(robot, state, result.irSector);
+    runRobotForControlPeriod(robot);
+  }
+
+  if (!result.targetReached)
+  {
+    result.stateCode = static_cast<uint8_t>(IrDetectionState::Timeout);
+  }
+
+  robot.stop();
+  robot.update();
+  result.elapsedUs = detectionTimerUs() - startUs;
+
+  return result;
+}
+
+static DetectionRunResult executeDetectionCommand(Esp32DetectionMode mode,
+                                                  Robot& robot,
+                                                  IrSensors& irSensors)
+{
+  switch (mode)
+  {
+    case Esp32DetectionMode::Ir:
+      return executeIrDetection(robot, irSensors);
+
+    default:
+      return DetectionRunResult{};
   }
 }
 
@@ -219,6 +410,9 @@ int main(void)
 
   Esp32Command esp32Command;
   Esp32DetectionMode activeDetectionMode = Esp32DetectionMode::None;
+  volatile uint8_t lastIrSectorCode = static_cast<uint8_t>(IrSensors::Sector::None);
+  volatile uint8_t lastIrStateCode = 0;
+  volatile uint8_t lastIrTargetReached = 0;
 
   /******************************************************/
 
@@ -241,7 +435,18 @@ int main(void)
         else if (esp32Command.type == Esp32CommandType::DetectionMode)
         {
           activeDetectionMode = esp32Command.detectionMode;
-          esp32CommandReceiver.sendDetectionResponse(activeDetectionMode);
+          const DetectionRunResult detectionResult =
+              executeDetectionCommand(activeDetectionMode, robot, irSensors);
+
+          if (activeDetectionMode == Esp32DetectionMode::Ir)
+          {
+            lastIrSectorCode = static_cast<uint8_t>(detectionResult.irSector);
+            lastIrStateCode = detectionResult.stateCode;
+            lastIrTargetReached = detectionResult.targetReached ? 1U : 0U;
+          }
+
+          esp32CommandReceiver.sendDetectionResponse(activeDetectionMode,
+                                                     detectionResult.elapsedUs);
         }
       }
 /************************************** IR SENSORS **********************************/

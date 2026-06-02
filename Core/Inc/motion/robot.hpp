@@ -24,6 +24,9 @@ public:
     void turnLeft(int speed);
     void turnRight(int speed);
 
+    void rotateLeft(int speed);
+    void rotateRight(int speed);
+
     void stop();
 
     void update();
