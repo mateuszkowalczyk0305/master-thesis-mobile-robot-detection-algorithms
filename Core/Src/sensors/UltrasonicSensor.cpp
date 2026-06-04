@@ -1,4 +1,4 @@
-#include "UltrasonicSensor.h"
+#include "sensors/UltrasonicSensor.h"
 
 static constexpr uint32_t TRIGGER_TIME_US = 10;
 

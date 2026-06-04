@@ -1,4 +1,4 @@
-#include "IrSensors.h"
+#include "sensors/IrSensors.h"
 
 IrSensors::IrSensors(ADC_HandleTypeDef* hadc)
     : hadc_(hadc)

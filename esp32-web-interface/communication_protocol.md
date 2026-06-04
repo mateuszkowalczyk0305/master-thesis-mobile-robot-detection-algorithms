@@ -25,13 +25,13 @@ x - number 0-9.
 
 `Argument:`
 
-- time_ms = uint number;
+- time_us = uint number;
 
 `Methodes:`
-- IR: #M:I,time_ms;
-- Ultrasonic: #M:U,time_ms;
-- LiDAR: #M:L,time_ms;
-- Fusion: #M:F,time_ms;
+- IR: #M:I,time_us;
+- Ultrasonic: #M:U,time_us;
+- LiDAR: #M:L,time_us;
+- Fusion: #M:F,time_us;
 
 `Motion:`
 - #D:OK;

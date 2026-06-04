@@ -1,4 +1,4 @@
-#include "Esp32CommandReceiver.h"
+#include "commands/Esp32CommandReceiver.h"
 
 Esp32CommandReceiver* Esp32CommandReceiver::activeReceiver = nullptr;
 
@@ -90,24 +90,24 @@ bool Esp32CommandReceiver::isOwnerOfUart(UART_HandleTypeDef* huart) const
     return huart->Instance == uart->Instance;
 }
 
-void Esp32CommandReceiver::sendDetectionResponse(Esp32DetectionMode mode, uint32_t timeMs)
+void Esp32CommandReceiver::sendDetectionResponse(Esp32DetectionMode mode, uint32_t elapsedUs)
 {
     switch (mode)
     {
         case Esp32DetectionMode::Ir:
-            sendTextWithTime("#M:I,", timeMs);
+            sendTextWithTime("#M:I,", elapsedUs);
             break;
 
         case Esp32DetectionMode::Ultrasonic:
-            sendTextWithTime("#M:U,", timeMs);
+            sendTextWithTime("#M:U,", elapsedUs);
             break;
 
         case Esp32DetectionMode::Lidar:
-            sendTextWithTime("#M:L,", timeMs);
+            sendTextWithTime("#M:L,", elapsedUs);
             break;
 
         case Esp32DetectionMode::Fusion:
-            sendTextWithTime("#M:F,", timeMs);
+            sendTextWithTime("#M:F,", elapsedUs);
             break;
 
         default:
@@ -314,7 +314,7 @@ void Esp32CommandReceiver::sendText(const char* text)
                       100);
 }
 
-void Esp32CommandReceiver::sendTextWithTime(const char* prefix, uint32_t timeMs)
+void Esp32CommandReceiver::sendTextWithTime(const char* prefix, uint32_t elapsedUs)
 {
     if (prefix == nullptr)
     {
@@ -335,9 +335,9 @@ void Esp32CommandReceiver::sendTextWithTime(const char* prefix, uint32_t timeMs)
 
     do
     {
-        digits[digitCount++] = static_cast<char>('0' + (timeMs % 10));
-        timeMs /= 10;
-    } while (timeMs > 0 && digitCount < sizeof(digits));
+        digits[digitCount++] = static_cast<char>('0' + (elapsedUs % 10));
+        elapsedUs /= 10;
+    } while (elapsedUs > 0 && digitCount < sizeof(digits));
 
     while (digitCount > 0 && index < (RESPONSE_BUFFER_SIZE - 1))
     {

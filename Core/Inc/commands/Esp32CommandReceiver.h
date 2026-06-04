@@ -48,7 +48,7 @@ public:
     void onUartError(UART_HandleTypeDef* huart);
     bool isOwnerOfUart(UART_HandleTypeDef* huart) const;
 
-    void sendDetectionResponse(Esp32DetectionMode mode, uint32_t timeMs = 0);
+    void sendDetectionResponse(Esp32DetectionMode mode, uint32_t elapsedUs = 0);
     void sendMotionOk();
 
     static void dispatchUartRxComplete(UART_HandleTypeDef* huart);
@@ -82,7 +82,7 @@ private:
     void enqueueCommand(const Esp32Command& command);
     bool parseFrame(const char* frame, uint8_t length, Esp32Command& command) const;
     void sendText(const char* text);
-    void sendTextWithTime(const char* prefix, uint32_t timeMs);
+    void sendTextWithTime(const char* prefix, uint32_t elapsedUs);
 
     static Esp32CommandReceiver* activeReceiver;
 };

@@ -1,5 +1,5 @@
-#include "RPLidar.h"
-#include "Esp32CommandReceiver.h"
+#include "sensors/RPLidar.h"
+#include "commands/Esp32CommandReceiver.h"
 
 /*
  * Zakładamy jeden LiDAR w projekcie.
