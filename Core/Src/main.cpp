@@ -174,6 +174,8 @@ int main(void)
       irSensors,
       leftUltrasonic,
       rightUltrasonic,
+      lidar,
+        esp32CommandReceiver,
       htim2
   );
   RobotApplication application(robot, esp32CommandReceiver, detectionMethods);

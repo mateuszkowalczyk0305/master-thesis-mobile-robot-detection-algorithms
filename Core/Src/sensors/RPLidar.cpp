@@ -1,11 +1,20 @@
 #include "sensors/RPLidar.h"
 #include "commands/Esp32CommandReceiver.h"
+#include "DebugData.h"
 
 /*
  * Zakładamy jeden LiDAR w projekcie.
  * Dzięki temu callback HAL-a może być w tym samym pliku co klasa.
  */
 static RPLidar* activeLidarObject = nullptr;
+
+namespace
+{
+uint8_t debugFlag(bool value)
+{
+    return value ? 1U : 0U;
+}
+}
 
 RPLidar::RPLidar(UART_HandleTypeDef* uartHandle,
                  TIM_HandleTypeDef* motorTimerHandle,
@@ -43,6 +52,12 @@ RPLidar::RPLidar(UART_HandleTypeDef* uartHandle,
     detectedObject.distanceMm = 0.0f;
     detectedObject.clusterWidthDeg = 0.0f;
     detectedObject.pointsCount = 0;
+
+    updateDebugCounters();
+    updateDebugRawPoint(lastPoint, false);
+    updateDebugCurrentCluster();
+    updateDebugBestCluster();
+    updateDebugObject();
 
     activeLidarObject = this;
 }
@@ -121,6 +136,7 @@ void RPLidar::onUartRxComplete(UART_HandleTypeDef* huart)
     receivedBytes++;
 
     processByte(rxByte);
+    updateDebugCounters();
 
     HAL_UART_Receive_IT(uart, &rxByte, 1);
 }
@@ -212,6 +228,9 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
             detectedObject.pointsCount = 0;
         }
 
+        updateDebugBestCluster();
+        updateDebugObject();
+
         clearCluster(bestCluster);
         hasPreviousFilteredPoint = false;
     }
@@ -219,7 +238,9 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
     /*
      * Punkt poza strefą detekcji kończy aktualny klaster.
      */
-    if (!isPointInDetectionZone(point))
+    const bool pointInDetectionZone = isPointInDetectionZone(point);
+
+    if (!pointInDetectionZone)
     {
         finishCurrentCluster();
         hasPreviousFilteredPoint = false;
@@ -227,6 +248,7 @@ void RPLidar::processPointForDetection(const RPLidarPoint& point)
     }
 
     filteredPoints++;
+    updateDebugFilteredPoint(point);
 
     /*
      * Brak aktywnego klastra — zaczynamy nowy.
@@ -409,6 +431,7 @@ void RPLidar::processMeasurementNode()
     if (!isValidMeasurementNode())
     {
         invalidNodes++;
+        updateDebugCounters();
         return;
     }
 
@@ -433,6 +456,12 @@ void RPLidar::processMeasurementNode()
 
     validPoints++;
     newPointAvailable = true;
+
+    const bool pointInDetectionZone = isPointInDetectionZone(lastPoint);
+
+    updateDebugRawPoint(lastPoint, pointInDetectionZone);
+    processPointForDetection(lastPoint);
+    updateDebugCounters();
 }
 
 void RPLidar::clearCluster(RPLidarCluster& cluster)
@@ -469,6 +498,8 @@ void RPLidar::startNewCluster(const RPLidarPoint& point)
     currentCluster.pointsCount = 1;
 
     currentClusterDistanceSum = point.distanceMm;
+
+    updateDebugCurrentCluster();
 }
 
 void RPLidar::addPointToCurrentCluster(const RPLidarPoint& point)
@@ -507,6 +538,8 @@ void RPLidar::addPointToCurrentCluster(const RPLidarPoint& point)
     {
         currentCluster.centerAngleDeg -= 360.0f;
     }
+
+    updateDebugCurrentCluster();
 }
 
 void RPLidar::finishCurrentCluster()
@@ -523,11 +556,13 @@ void RPLidar::finishCurrentCluster()
         if (isBetterCluster(currentCluster, bestCluster))
         {
             bestCluster = currentCluster;
+            updateDebugBestCluster();
         }
     }
 
     clearCluster(currentCluster);
     currentClusterDistanceSum = 0.0f;
+    updateDebugCurrentCluster();
 }
 
 bool RPLidar::isPointCloseToPrevious(const RPLidarPoint& point) const
@@ -603,6 +638,64 @@ float RPLidar::angleForwardDiff(float startDeg, float endDeg) const
     }
 
     return diff;
+}
+
+void RPLidar::updateDebugCounters() const
+{
+    lidarDebug.receivedBytes = receivedBytes;
+    lidarDebug.validPoints = validPoints;
+    lidarDebug.invalidNodes = invalidNodes;
+    lidarDebug.filteredPoints = filteredPoints;
+    lidarDebug.clustersCreated = clustersCreated;
+    lidarDebug.detectedObjects = detectedObjects;
+}
+
+void RPLidar::updateDebugRawPoint(const RPLidarPoint& point,
+                                  bool pointInDetectionZone) const
+{
+    lidarDebug.angleDeg = point.angleDeg;
+    lidarDebug.distanceMm = point.distanceMm;
+    lidarDebug.quality = point.quality;
+    lidarDebug.startFlag = debugFlag(point.startFlag);
+    lidarDebug.valid = debugFlag(point.valid);
+    lidarDebug.inDetectionZone = debugFlag(pointInDetectionZone);
+}
+
+void RPLidar::updateDebugFilteredPoint(const RPLidarPoint& point) const
+{
+    lidarDebug.filteredAngleDeg = point.angleDeg;
+    lidarDebug.filteredDistanceMm = point.distanceMm;
+    lidarDebug.filteredQuality = point.quality;
+}
+
+void RPLidar::updateDebugCurrentCluster() const
+{
+    lidarDebug.currentClusterValid = debugFlag(currentCluster.valid);
+    lidarDebug.currentClusterPoints = currentCluster.pointsCount;
+    lidarDebug.currentClusterStartAngle = currentCluster.startAngleDeg;
+    lidarDebug.currentClusterEndAngle = currentCluster.endAngleDeg;
+    lidarDebug.currentClusterCenterAngle = currentCluster.centerAngleDeg;
+    lidarDebug.currentClusterDistance = currentCluster.averageDistanceMm;
+    lidarDebug.currentClusterWidth = currentCluster.widthDeg;
+}
+
+void RPLidar::updateDebugBestCluster() const
+{
+    lidarDebug.bestClusterValid = debugFlag(bestCluster.valid);
+    lidarDebug.bestClusterPoints = bestCluster.pointsCount;
+    lidarDebug.bestClusterCenterAngle = bestCluster.centerAngleDeg;
+    lidarDebug.bestClusterDistance = bestCluster.averageDistanceMm;
+    lidarDebug.bestClusterWidth = bestCluster.widthDeg;
+}
+
+void RPLidar::updateDebugObject() const
+{
+    lidarDebug.objectDetected = debugFlag(detectedObject.detected);
+    lidarDebug.objectAngle = detectedObject.angleDeg;
+    lidarDebug.objectDistance = detectedObject.distanceMm;
+    lidarDebug.objectWidth = detectedObject.clusterWidthDeg;
+    lidarDebug.objectPoints = detectedObject.pointsCount;
+    lidarDebug.objectSector = static_cast<uint8_t>(getObjectSector());
 }
 
 /*

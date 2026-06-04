@@ -56,6 +56,43 @@ bool Esp32CommandReceiver::getCommand(Esp32Command& command)
     return true;
 }
 
+bool Esp32CommandReceiver::consumeStopMotionCommand()
+{
+    if (queuedCommands == 0)
+    {
+        return false;
+    }
+
+    __disable_irq();
+
+    bool stopCommandFound = false;
+    uint8_t readIndex = commandQueueHead;
+
+    for (uint8_t commandIndex = 0; commandIndex < queuedCommands; commandIndex++)
+    {
+        const Esp32Command& queuedCommand = commandQueue[readIndex];
+
+        if (queuedCommand.type == Esp32CommandType::Motion &&
+            queuedCommand.motionDirection == Esp32MotionDirection::Stop)
+        {
+            stopCommandFound = true;
+            break;
+        }
+
+        readIndex = static_cast<uint8_t>((readIndex + 1) % COMMAND_QUEUE_SIZE);
+    }
+
+    if (stopCommandFound)
+    {
+        commandQueueHead = commandQueueTail;
+        queuedCommands = 0;
+    }
+
+    __enable_irq();
+
+    return stopCommandFound;
+}
+
 void Esp32CommandReceiver::onUartRxComplete(UART_HandleTypeDef* huart)
 {
     if (!isOwnerOfUart(huart))

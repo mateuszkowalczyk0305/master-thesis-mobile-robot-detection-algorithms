@@ -44,6 +44,7 @@ public:
 
     void init();
     bool getCommand(Esp32Command& command);
+    bool consumeStopMotionCommand();
     void onUartRxComplete(UART_HandleTypeDef* huart);
     void onUartError(UART_HandleTypeDef* huart);
     bool isOwnerOfUart(UART_HandleTypeDef* huart) const;

@@ -115,17 +115,13 @@ private:
 
     /*
      * Zakres detekcji.
-     *
-     * 300-60 stopni oznacza sektor:
-     * 300 ... 360 ... 0 ... 60
-     *
-     * To potem dostosujesz do fizycznego obrotu LiDAR-a na robocie.
+     * Metoda LiDAR wybiera najbliższy klaster z pełnego skanu 360 stopni.
      */
     static constexpr float MIN_DETECTION_DISTANCE_MM = 150.0f;
     static constexpr float MAX_DETECTION_DISTANCE_MM = 1500.0f;
 
-    static constexpr float MIN_DETECTION_ANGLE_DEG = 300.0f;
-    static constexpr float MAX_DETECTION_ANGLE_DEG = 60.0f;
+    static constexpr float MIN_DETECTION_ANGLE_DEG = 0.0f;
+    static constexpr float MAX_DETECTION_ANGLE_DEG = 360.0f;
 
     static constexpr uint8_t MIN_QUALITY = 5;
 
@@ -177,6 +173,14 @@ private:
                          const RPLidarCluster& currentBest) const;
 
     float angleForwardDiff(float startDeg, float endDeg) const;
+
+    void updateDebugCounters() const;
+    void updateDebugRawPoint(const RPLidarPoint& point,
+                             bool pointInDetectionZone) const;
+    void updateDebugFilteredPoint(const RPLidarPoint& point) const;
+    void updateDebugCurrentCluster() const;
+    void updateDebugBestCluster() const;
+    void updateDebugObject() const;
 };
 
 #endif
