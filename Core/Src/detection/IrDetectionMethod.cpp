@@ -2,14 +2,20 @@
 
 namespace
 {
-constexpr int IR_DETECTION_PWM = 850;
-constexpr float IR_TARGET_STOP_CM = 20.0f;
-constexpr uint32_t IR_DETECTION_TIMEOUT_US = 10000000U;
+constexpr int IR_ROTATION_PWM = 999;
+constexpr int IR_ALIGN_PWM = 999;
+constexpr int IR_APPROACH_PWM = 999;
+constexpr uint32_t IR_FULL_ROTATION_TIME_US = 4000000U;
+constexpr uint32_t IR_APPROACH_TIMEOUT_US = 20000000U;
 constexpr uint32_t IR_CONTROL_PERIOD_US = 10000U;
+constexpr float IR_TARGET_STOP_CM = 5.0f;
+constexpr float IR_CLOSE_OBJECT_VOLTAGE = 2.75f;
 
-float minDistance(float firstDistanceCm, float secondDistanceCm)
+bool isSensorAtTargetDistance(const IrSensors::SensorData& sensorData)
 {
-    return (firstDistanceCm < secondDistanceCm) ? firstDistanceCm : secondDistanceCm;
+    return sensorData.distanceCm <= IR_TARGET_STOP_CM ||
+        sensorData.filteredCm <= IR_TARGET_STOP_CM ||
+        sensorData.voltage >= IR_CLOSE_OBJECT_VOLTAGE;
 }
 }
 
@@ -25,29 +31,25 @@ IrDetectionMethod::IrDetectionMethod(Robot& robotRef,
 DetectionMethodResult IrDetectionMethod::run()
 {
     DetectionMethodResult result;
-    State state = State::Search;
     const uint32_t startUs = timerUs();
 
-    while ((timerUs() - startUs) < IR_DETECTION_TIMEOUT_US)
+    result.stateCode = static_cast<uint8_t>(State::Search);
+    const FrontScanObservation bestObservation = scanFullRotation();
+
+    result.stateCode = static_cast<uint8_t>(State::ScanComplete);
+    result.sectorCode = static_cast<uint8_t>(bestObservation.sector);
+
+    result.stateCode = static_cast<uint8_t>(State::AlignToBest);
+    rotateToBestObservation(bestObservation);
+
+    result.stateCode = static_cast<uint8_t>(State::Approach);
+    result.targetReached = approachTarget(result);
+
+    if (result.targetReached)
     {
-        irSensors.update();
-        const IrSensors::Sector sector = irSensors.getSector();
-        state = nextState(state, sector, isTargetReached(sector));
-
-        result.sectorCode = static_cast<uint8_t>(sector);
-        result.stateCode = static_cast<uint8_t>(state);
-
-        if (state == State::TargetReached)
-        {
-            result.targetReached = true;
-            break;
-        }
-
-        driveState(state, sector);
-        runRobotForControlPeriod();
+        result.stateCode = static_cast<uint8_t>(State::TargetReached);
     }
-
-    if (!result.targetReached)
+    else
     {
         result.stateCode = static_cast<uint8_t>(State::Timeout);
     }
@@ -64,17 +66,89 @@ uint32_t IrDetectionMethod::timerUs() const
     return __HAL_TIM_GET_COUNTER(&timer);
 }
 
-void IrDetectionMethod::runRobotForControlPeriod()
+void IrDetectionMethod::runRobotForDuration(uint32_t durationUs)
 {
-    const uint32_t periodStartUs = timerUs();
+    const uint32_t startUs = timerUs();
 
-    while ((timerUs() - periodStartUs) < IR_CONTROL_PERIOD_US)
+    while ((timerUs() - startUs) < durationUs)
     {
         robot.update();
     }
 }
 
-bool IrDetectionMethod::isTargetReached(IrSensors::Sector sector) const
+IrDetectionMethod::FrontScanObservation IrDetectionMethod::scanFullRotation()
+{
+    FrontScanObservation bestObservation;
+    const uint32_t rotationStartUs = timerUs();
+
+    robot.rotateLeft(IR_ROTATION_PWM);
+
+    while ((timerUs() - rotationStartUs) < IR_FULL_ROTATION_TIME_US)
+    {
+        irSensors.update();
+        const IrSensors::SensorData centerData =
+            irSensors.getSensorData(IrSensors::Sensor::Center);
+
+        if (centerData.voltage > bestObservation.centerVoltage)
+        {
+            bestObservation.centerVoltage = centerData.voltage;
+            bestObservation.rotationTimeUs = timerUs() - rotationStartUs;
+            bestObservation.sector = irSensors.getSector();
+        }
+
+        robot.update();
+    }
+
+    robot.stop();
+    robot.update();
+
+    return bestObservation;
+}
+
+void IrDetectionMethod::rotateToBestObservation(const FrontScanObservation& observation)
+{
+    const uint32_t leftTurnTimeUs = observation.rotationTimeUs;
+    const uint32_t rightTurnTimeUs = IR_FULL_ROTATION_TIME_US - observation.rotationTimeUs;
+
+    if (leftTurnTimeUs <= rightTurnTimeUs)
+    {
+        robot.rotateLeft(IR_ROTATION_PWM);
+        runRobotForDuration(leftTurnTimeUs);
+    }
+    else
+    {
+        robot.rotateRight(IR_ROTATION_PWM);
+        runRobotForDuration(rightTurnTimeUs);
+    }
+
+    robot.stop();
+    robot.update();
+}
+
+bool IrDetectionMethod::approachTarget(DetectionMethodResult& result)
+{
+    const uint32_t approachStartUs = timerUs();
+
+    while ((timerUs() - approachStartUs) < IR_APPROACH_TIMEOUT_US)
+    {
+        irSensors.update();
+        const IrSensors::Sector sector = irSensors.getSector();
+
+        result.sectorCode = static_cast<uint8_t>(sector);
+
+        if (isTargetReached())
+        {
+            return true;
+        }
+
+        driveApproachState(sector);
+        runRobotForDuration(IR_CONTROL_PERIOD_US);
+    }
+
+    return false;
+}
+
+bool IrDetectionMethod::isTargetReached() const
 {
     const IrSensors::SensorData leftData =
         irSensors.getSensorData(IrSensors::Sensor::Left);
@@ -83,48 +157,9 @@ bool IrDetectionMethod::isTargetReached(IrSensors::Sector sector) const
     const IrSensors::SensorData rightData =
         irSensors.getSensorData(IrSensors::Sensor::Right);
 
-    const float closestFrontDistanceCm =
-        minDistance(centerData.filteredCm,
-                    minDistance(leftData.filteredCm, rightData.filteredCm));
-
-    if (sector == IrSensors::Sector::Center)
-    {
-        return centerData.filteredCm <= IR_TARGET_STOP_CM;
-    }
-
-    if (sector == IrSensors::Sector::FrontWide)
-    {
-        return closestFrontDistanceCm <= IR_TARGET_STOP_CM;
-    }
-
-    return false;
-}
-
-IrDetectionMethod::State IrDetectionMethod::nextState(State state,
-                                                      IrSensors::Sector sector,
-                                                      bool targetReached) const
-{
-    if (targetReached)
-    {
-        return State::TargetReached;
-    }
-
-    if (sector == IrSensors::Sector::None)
-    {
-        return State::Search;
-    }
-
-    if (state == State::Search)
-    {
-        return State::Approach;
-    }
-
-    return state;
-}
-
-void IrDetectionMethod::driveSearchState()
-{
-    robot.rotateLeft(IR_DETECTION_PWM);
+    return isSensorAtTargetDistance(leftData) ||
+        isSensorAtTargetDistance(centerData) ||
+        isSensorAtTargetDistance(rightData);
 }
 
 void IrDetectionMethod::driveApproachState(IrSensors::Sector sector)
@@ -133,40 +168,20 @@ void IrDetectionMethod::driveApproachState(IrSensors::Sector sector)
     {
         case IrSensors::Sector::Center:
         case IrSensors::Sector::FrontWide:
-            robot.forward(IR_DETECTION_PWM);
+            robot.forward(IR_APPROACH_PWM);
             break;
 
         case IrSensors::Sector::Left:
-            robot.rotateLeft(IR_DETECTION_PWM);
+            robot.turnLeft(IR_ALIGN_PWM);
             break;
 
         case IrSensors::Sector::Right:
-            robot.rotateRight(IR_DETECTION_PWM);
+            robot.turnRight(IR_ALIGN_PWM);
             break;
 
         case IrSensors::Sector::None:
         default:
-            robot.stop();
-            break;
-    }
-}
-
-void IrDetectionMethod::driveState(State state, IrSensors::Sector sector)
-{
-    switch (state)
-    {
-        case State::Search:
-            driveSearchState();
-            break;
-
-        case State::Approach:
-            driveApproachState(sector);
-            break;
-
-        case State::TargetReached:
-        case State::Timeout:
-        default:
-            robot.stop();
+            robot.forward(IR_APPROACH_PWM);
             break;
     }
 }

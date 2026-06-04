@@ -20,7 +20,16 @@ private:
         Search = 0,
         Approach = 1,
         TargetReached = 2,
-        Timeout = 3
+        Timeout = 3,
+        ScanComplete = 4,
+        AlignToBest = 5
+    };
+
+    struct FrontScanObservation
+    {
+        float centerVoltage = 0.0f;
+        uint32_t rotationTimeUs = 0;
+        IrSensors::Sector sector = IrSensors::Sector::None;
     };
 
     Robot& robot;
@@ -28,10 +37,10 @@ private:
     TIM_HandleTypeDef& timer;
 
     uint32_t timerUs() const;
-    void runRobotForControlPeriod();
-    bool isTargetReached(IrSensors::Sector sector) const;
-    State nextState(State state, IrSensors::Sector sector, bool targetReached) const;
-    void driveSearchState();
+    void runRobotForDuration(uint32_t durationUs);
+    FrontScanObservation scanFullRotation();
+    void rotateToBestObservation(const FrontScanObservation& observation);
+    bool approachTarget(DetectionMethodResult& result);
+    bool isTargetReached() const;
     void driveApproachState(IrSensors::Sector sector);
-    void driveState(State state, IrSensors::Sector sector);
 };

@@ -169,7 +169,13 @@ int main(void)
   Esp32CommandReceiver esp32CommandReceiver(&huart1);
   esp32CommandReceiver.init();
 
-  DetectionMethodExecutor detectionMethods(robot, irSensors, htim2);
+  DetectionMethodExecutor detectionMethods(
+      robot,
+      irSensors,
+      leftUltrasonic,
+      rightUltrasonic,
+      htim2
+  );
   RobotApplication application(robot, esp32CommandReceiver, detectionMethods);
 
   /******************************************************/

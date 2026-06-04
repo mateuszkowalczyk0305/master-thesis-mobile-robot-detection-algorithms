@@ -11,7 +11,7 @@ static constexpr uint32_t TIMEOUT_US = 12000;
 static constexpr float US_TO_CM = 58.0f;
 
 static constexpr float MIN_DISTANCE_CM = 2.0f;
-static constexpr float MAX_DISTANCE_CM = 100.0f;
+static constexpr float MAX_DISTANCE_CM = 150.0f;
 
 UltrasonicSensor* UltrasonicSensor::s_sensors[UltrasonicSensor::MAX_REGISTERED_SENSORS] = {
     nullptr,

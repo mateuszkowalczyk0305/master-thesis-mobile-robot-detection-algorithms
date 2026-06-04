@@ -19,6 +19,14 @@ void Robot::forward(int speed)
     w4.setSpeed(Direction::Forward, speed);
 }
 
+void Robot::forwardDifferential(int leftSpeed, int rightSpeed)
+{
+    w1.setSpeed(Direction::Forward, rightSpeed);
+    w2.setSpeed(Direction::Forward, leftSpeed);
+    w3.setSpeed(Direction::Forward, rightSpeed);
+    w4.setSpeed(Direction::Forward, leftSpeed);
+}
+
 void Robot::backward(int speed)
 {
     w1.setSpeed(Direction::Backward, speed);

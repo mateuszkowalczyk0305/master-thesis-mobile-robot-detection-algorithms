@@ -19,6 +19,7 @@ public:
           Wheel& wheel4);
 
     void forward(int speed);
+    void forwardDifferential(int leftSpeed, int rightSpeed);
     void backward(int speed);
 
     void turnLeft(int speed);
