@@ -2,6 +2,7 @@
 
 #include "commands/Esp32CommandReceiver.h"
 #include "detection/DetectionMethodResult.hpp"
+#include "detection/FusionDetectionMethod.hpp"
 #include "detection/IrDetectionMethod.hpp"
 #include "detection/LidarDetectionMethod.hpp"
 #include "detection/UltrasonicDetectionMethod.hpp"
@@ -13,16 +14,23 @@
 class DetectionMethodExecutor
 {
 public:
-        DetectionMethodExecutor(Robot& robot,
-                                                        IrSensors& irSensors,
-                                                        UltrasonicSensor& leftUltrasonic,
-                                                        UltrasonicSensor& rightUltrasonic,
-                                                        RPLidar& lidar,
-                                                        Esp32CommandReceiver& commandReceiver,
-                                                        TIM_HandleTypeDef& timer)
-                : irMethod(robot, irSensors, timer),
-                    ultrasonicMethod(robot, leftUltrasonic, rightUltrasonic, timer),
-                    lidarMethod(robot, lidar, commandReceiver, timer)
+    DetectionMethodExecutor(Robot& robot,
+                            IrSensors& irSensors,
+                            UltrasonicSensor& leftUltrasonic,
+                            UltrasonicSensor& rightUltrasonic,
+                            RPLidar& lidar,
+                            Esp32CommandReceiver& commandReceiver,
+                            TIM_HandleTypeDef& timer)
+        : irMethod(robot, irSensors, timer),
+          ultrasonicMethod(robot, leftUltrasonic, rightUltrasonic, timer),
+          lidarMethod(robot, lidar, commandReceiver, timer),
+          fusionMethod(robot,
+                       irSensors,
+                       leftUltrasonic,
+                       rightUltrasonic,
+                       lidar,
+                       commandReceiver,
+                       timer)
     {
     }
 
@@ -39,6 +47,9 @@ public:
             case Esp32DetectionMode::Lidar:
                 return lidarMethod.run();
 
+            case Esp32DetectionMode::Fusion:
+                return fusionMethod.run();
+
             default:
                 return DetectionMethodResult{};
         }
@@ -48,4 +59,5 @@ private:
     IrDetectionMethod irMethod;
     UltrasonicDetectionMethod ultrasonicMethod;
     LidarDetectionMethod lidarMethod;
+    FusionDetectionMethod fusionMethod;
 };
