@@ -12,22 +12,22 @@ constexpr uint32_t LIDAR_FULL_ROTATION_TIME_US = 4000000U;
 constexpr uint32_t LIDAR_OBJECT_WAIT_TIMEOUT_US = 3000000U;
 constexpr uint32_t LIDAR_APPROACH_TIMEOUT_US = 20000000U;
 constexpr uint32_t LIDAR_CONTROL_PERIOD_US = 60000U;
-constexpr uint32_t LIDAR_FINAL_FORWARD_TIME_US = 300000U;
+constexpr uint32_t LIDAR_FINAL_FORWARD_TIME_US = 500000U;
 
-constexpr float LIDAR_TARGET_STOP_MM = 180.0f;
+constexpr float LIDAR_TARGET_STOP_MM = 300.0f;
 constexpr float LIDAR_ANGLE_DEADBAND_DEG = 5.0f;
 constexpr float LIDAR_STEERING_KP = 4.0f;
 }
 
 LidarDetectionMethod::LidarDetectionMethod(Robot& robotRef,
                                            RPLidar& lidarRef,
-                             Esp32CommandReceiver& commandReceiverRef,
+										   Esp32CommandReceiver& commandReceiverRef,
                                            TIM_HandleTypeDef& timerRef)
     : robot(robotRef),
       lidar(lidarRef),
-    commandReceiver(commandReceiverRef),
-    timer(timerRef),
-    cancellationRequested(false)
+            commandReceiver(commandReceiverRef),
+            timer(timerRef),
+            cancellationRequested(false)
 {
 }
 
